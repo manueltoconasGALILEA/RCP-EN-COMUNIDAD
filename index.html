@@ -37,4 +37,727 @@
         @keyframes popInAndOut { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 30% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
         .hazard-zone { position: absolute; border-radius: 50%; background: rgba(239, 68, 68, 0.2); border: 2px dashed #ef4444; cursor: pointer; transition: all 0.3s; animation: pulse-border 2s infinite; }
         .hazard-zone:hover { background: rgba(239, 68, 68, 0.4); }
-        .hazard-zone.found { background: rgba
+        .hazard-zone.found { background: rgba(220, 38, 38, 0.8) !important; border: 3px solid #b91c1c; animation: none; display: flex; align-items: center; justify-content: center; }
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .img-option { transition: all 0.2s; cursor: pointer; border: 4px solid transparent; }
+        .img-option.selected-correct { border-color: #22c55e !important; box-shadow: 0 0 15px rgba(34, 197, 94, 0.5); }
+        .img-option.selected-wrong { border-color: #ef4444 !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+        .chest-target-container { position: relative; cursor: crosshair; }
+        .click-marker { position: absolute; width: 30px; height: 30px; background: rgba(59, 130, 246, 0.8); border: 3px solid white; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; z-index: 10; }
+        .correct-zone-indicator { position: absolute; border: 3px dashed #22c55e; background: rgba(34, 197, 94, 0.3); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 5; display: none; }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <header class="bg-white border-b-4 border-unpa shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="showView('splash')">
+                <div class="flex items-center gap-1">
+                    <div class="w-10 h-10 bg-unpa rounded flex items-center justify-center text-white font-black text-[10px]">UNPA</div>
+                    <div class="w-10 h-10 bg-uart-v rounded flex items-center justify-center text-white font-black text-[10px]">UART</div>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg leading-none text-unpa">Escuela de Enfermería</h1>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sede Río Turbio</p>
+                </div>
+            </div>
+            <button onclick="showView('mod-auth')" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-unpa hover:text-white transition">
+                <i class="fa-solid fa-user-gear"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 mt-6">
+
+        <div id="view-splash" class="view-section active text-center">
+            <h2 class="text-4xl md:text-6xl font-black text-slate-900 mb-2 tracking-tighter italic uppercase">Proyecto de Extensión</h2>
+            <p class="text-xl text-slate-500 font-bold mb-12">Capacitación en RCP y DEA en la Comunidad</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                
+                <button onclick="showView('home-rcp');" class="bg-white p-8 rounded-3xl shadow-xl border-2 border-slate-100 hover:border-uart transition group text-left flex flex-col h-full">
+                    <div class="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-red-600 group-hover:text-white transition"><i class="fa-solid fa-heart-pulse text-2xl"></i></div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-2">Laboratorio de Aprendizaje</h3>
+                    <p class="text-slate-500 text-sm mt-2 flex-grow">Simuladores interactivos y práctica de RCP y DEA.</p>
+                </button>
+                
+                <button onclick="startAutoEvaluation()" class="bg-slate-800 p-8 rounded-3xl shadow-xl border-2 border-slate-700 hover:bg-black transition group text-left flex flex-col h-full text-white">
+                    <div class="w-14 h-14 bg-slate-700 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-500 transition"><i class="fa-solid fa-clipboard-check text-2xl"></i></div>
+                    <h3 class="text-2xl font-black text-white">Auto Evaluación</h3>
+                    <p class="text-slate-400 text-sm mt-2 flex-grow">Pon a prueba lo aprendido sin necesidad de registro previo.</p>
+                </button>
+
+                <button onclick="showView('recorrido')" class="md:col-span-2 bg-gradient-to-r from-blue-50 to-purple-50 p-8 rounded-3xl shadow-xl border-2 border-blue-100 hover:border-blue-300 transition group text-left flex flex-col items-center text-center h-full">
+                    <div class="w-16 h-16 bg-white text-unpa rounded-full shadow-md flex items-center justify-center mb-4 group-hover:scale-110 transition duration-300"><i class="fa-solid fa-images text-2xl"></i></div>
+                    <h3 class="text-2xl font-black text-slate-800">Nuestro Recorrido</h3>
+                    <p class="text-slate-500 text-sm mt-2 max-w-lg">Revive en imágenes nuestras jornadas de capacitación. Explora la galería y déjanos tus comentarios.</p>
+                </button>
+
+            </div>
+            
+            <div class="mt-12 text-center">
+                <div class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-shield-halved text-unpa"></i> LEY NACIONAL 27.159: Prevención Integral de Muerte Súbita
+                </div>
+            </div>
+        </div>
+
+        <div id="view-mod-auth" class="view-section max-w-sm mx-auto mt-20">
+            <div class="card-university p-8 bg-white rounded-3xl shadow-2xl text-center">
+                <i class="fa-solid fa-lock text-4xl text-slate-300 mb-4"></i>
+                <h2 class="text-xl font-black mb-6">Panel de Moderación</h2>
+                <input type="password" id="mod-pin" class="w-full p-4 bg-slate-50 border-2 rounded-xl text-center text-2xl font-black tracking-[1em] mb-6 focus:border-unpa outline-none" placeholder="****" maxlength="4">
+                <button onclick="checkModAuth()" class="w-full bg-unpa text-white font-black py-4 rounded-xl hover:bg-blue-800 transition">ACCEDER</button>
+                <button onclick="showView('splash')" class="mt-4 text-slate-400 font-bold text-xs underline uppercase">Volver</button>
+            </div>
+        </div>
+
+        <div id="view-mod-menu" class="view-section max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-black text-slate-800 italic">Panel del Instructor</h2>
+                <button onclick="showView('splash')" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-sm">Cerrar Sesión</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <button onclick="showView('disertar')" class="card-mod p-6 hover:scale-105 transition text-center bg-blue-50">
+                    <i class="fa-solid fa-person-chalkboard text-3xl text-unpa mb-4"></i>
+                    <span class="block font-black text-unpa">Disertar</span>
+                    <span class="text-xs text-slate-500">Presentación visual</span>
+                </button>
+                <button onclick="showView('mod-cotejo-reg')" class="card-mod p-6 hover:scale-105 transition text-center">
+                    <i class="fa-solid fa-clipboard-list text-3xl text-unpa mb-4"></i>
+                    <span class="block font-black">Lista de Cotejo</span>
+                    <span class="text-xs text-slate-500">Evaluar participante</span>
+                </button>
+                <button onclick="renderHistorico()" class="card-mod p-6 hover:scale-105 transition text-center">
+                    <i class="fa-solid fa-table-list text-3xl text-unpa mb-4"></i>
+                    <span class="block font-black">Histórico</span>
+                    <span class="text-xs text-slate-500">Ver notas</span>
+                </button>
+                <button onclick="renderEstadisticas()" class="card-mod p-6 hover:scale-105 transition text-center">
+                    <i class="fa-solid fa-chart-column text-3xl text-unpa mb-4"></i>
+                    <span class="block font-black">Estadísticas</span>
+                    <span class="text-xs text-slate-500">Gráficos de aciertos</span>
+                </button>
+                <button onclick="showView('mod-registro')" class="card-mod p-6 hover:scale-105 transition text-center lg:col-span-4 bg-purple-50 border-t-4 border-uart-v">
+                    <i class="fa-solid fa-camera-retro text-3xl text-uart-v mb-4"></i>
+                    <span class="block font-black text-uart-v">Nuestro Registro</span>
+                    <span class="text-xs text-slate-500">Subir foto a Nuestro Recorrido</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="view-mod-cotejo-reg" class="view-section max-w-md mx-auto">
+            <div class="bg-white p-8 rounded-3xl shadow-xl border-t-4 border-unpa">
+                <h2 class="text-2xl font-black mb-6">Registro de Evaluado</h2>
+                <div class="space-y-4">
+                    <input type="text" id="cotejo-name" class="w-full p-4 bg-slate-50 border rounded-xl focus:border-unpa outline-none" placeholder="Nombre y Apellido Completo">
+                    <input type="number" id="cotejo-dni" class="w-full p-4 bg-slate-50 border rounded-xl focus:border-unpa outline-none" placeholder="DNI">
+                    <input type="email" id="cotejo-email" class="w-full p-4 bg-slate-50 border rounded-xl focus:border-unpa outline-none" placeholder="Correo Electrónico">
+                    <input type="tel" id="cotejo-tel" class="w-full p-4 bg-slate-50 border rounded-xl focus:border-unpa outline-none" placeholder="Número de Teléfono">
+                    <button onclick="startCotejo()" class="w-full bg-unpa text-white font-black py-4 rounded-xl mt-4 hover:bg-blue-800 transition">ACCEDER AL COTEJO</button>
+                    <button onclick="showView('mod-menu')" class="w-full text-slate-400 font-bold mt-2 text-sm underline">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-cotejo-eval" class="view-section max-w-3xl mx-auto bg-white p-8 rounded-3xl shadow-xl border-t-8 border-unpa">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-black text-unpa">Jornada Taller: RCP-DEA</h2>
+                <p class="text-sm text-slate-500 font-bold mt-2">Evaluando a: <span id="eval-target-name" class="text-slate-800 text-lg"></span></p>
+            </div>
+
+            <div class="space-y-8" id="cotejo-questions-container">
+                <div class="bg-slate-50 p-4 rounded-xl border-l-4 border-unpa">
+                    <h3 class="font-black text-unpa text-sm uppercase mb-4">Fase 1: CONDUCTA / PROCEDIMIENTO INICIAL</h3>
+                    <div class="space-y-6" id="fase1-list"></div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border-l-4 border-uart-red">
+                    <h3 class="font-black text-uart-red text-sm uppercase mb-4">Fase 2: SI EL PACIENTE NO RESPONDE</h3>
+                    <div class="space-y-6" id="fase2-list"></div>
+                </div>
+            </div>
+
+            <div class="mt-10 pt-6 border-t">
+                <button onclick="calcCotejoResult()" class="w-full bg-slate-800 text-white font-black py-4 rounded-xl text-lg hover:bg-black transition">VER RESULTADO</button>
+            </div>
+        </div>
+
+        <div id="view-mod-historico" class="view-section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black italic">Histórico de Participantes</h2>
+                <button onclick="showView('mod-menu')" class="bg-white border px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-50">Volver</button>
+            </div>
+            <div class="overflow-x-auto bg-white rounded-2xl shadow border border-slate-100">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead class="bg-slate-50 border-b">
+                        <tr>
+                            <th class="p-4 font-black text-xs uppercase text-slate-400">Fecha</th>
+                            <th class="p-4 font-black text-xs uppercase text-slate-400">Nombre</th>
+                            <th class="p-4 font-black text-xs uppercase text-slate-400">DNI</th>
+                            <th class="p-4 font-black text-xs uppercase text-slate-400">Email</th>
+                            <th class="p-4 font-black text-xs uppercase text-slate-400">Teléfono</th>
+                            <th class="p-4 font-black text-xs uppercase text-slate-400">Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historico-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-mod-stats" class="view-section max-w-5xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black italic">Estadísticas de Desempeño</h2>
+                <button onclick="showView('mod-menu')" class="bg-white border px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-50">Volver</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-xl shadow-sm text-center border border-slate-100">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Total Evaluados</span>
+                    <p id="stat-total" class="text-4xl font-black text-unpa mt-2">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm text-center border border-slate-100 md:col-span-3 flex items-center justify-center">
+                    <p class="text-sm text-slate-500 font-medium">Gráfico del porcentaje de aciertos por cada punto de la lista de cotejo.</p>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-xl h-[500px] border border-slate-100">
+                <canvas id="chartCotejo"></canvas>
+            </div>
+        </div>
+
+        <div id="view-mod-registro" class="view-section max-w-lg mx-auto mt-6">
+            <button onclick="showView('mod-menu')" class="text-slate-400 mb-6 font-bold text-sm flex items-center hover:text-uart-v"><i class="fa-solid fa-arrow-left mr-2"></i>Volver al Panel</button>
+            <div class="bg-white p-8 rounded-3xl shadow-xl border-t-4 border-uart-v">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-purple-50 text-uart-v rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-camera text-2xl"></i></div>
+                    <h2 class="text-2xl font-black text-slate-800">Nuestro Registro</h2>
+                    <p class="text-sm text-slate-500 mt-2">Sube una foto de la jornada. Se comprimirá automáticamente para ahorrar espacio y subir muy rápido.</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex gap-4 mb-4" id="upload-buttons">
+                        <label class="flex-1 bg-slate-50 hover:bg-slate-100 border-2 border-slate-300 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition">
+                            <i class="fa-solid fa-camera text-3xl text-slate-400 mb-2"></i>
+                            <span class="text-xs font-bold text-slate-600 text-center">Usar Cámara</span>
+                            <input type="file" accept="image/*" capture="environment" class="hidden" onchange="previewImage(this)">
+                        </label>
+                        <label class="flex-1 bg-slate-50 hover:bg-slate-100 border-2 border-slate-300 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition">
+                            <i class="fa-solid fa-images text-3xl text-slate-400 mb-2"></i>
+                            <span class="text-xs font-bold text-slate-600 text-center">De Galería</span>
+                            <input type="file" accept="image/*" class="hidden" onchange="previewImage(this)">
+                        </label>
+                    </div>
+
+                    <div id="preview-container" class="hidden relative w-full h-56 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+                        <img id="registro-preview" class="w-full h-full object-contain bg-black/5" alt="Vista previa">
+                        <button onclick="clearPreview()" class="absolute top-2 right-2 bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg hover:bg-red-700 transition"><i class="fa-solid fa-times"></i></button>
+                    </div>
+
+                    <textarea id="registro-desc" rows="3" class="w-full p-4 bg-slate-50 border rounded-xl focus:border-uart-v outline-none resize-none" placeholder="Añade un breve comentario sobre la foto..."></textarea>
+                    
+                    <button id="btn-upload-registro" onclick="uploadRecorrido()" class="w-full bg-uart-v text-white font-black py-4 rounded-xl shadow-lg hover:bg-purple-900 transition flex justify-center items-center">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> PUBLICAR FOTO
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-recorrido" class="view-section max-w-2xl mx-auto mt-4">
+            <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm">
+                <button onclick="showView('splash')" class="text-slate-500 hover:text-unpa font-bold px-4 py-2 rounded-lg transition"><i class="fa-solid fa-house mr-2"></i>Inicio</button>
+                <h2 class="text-2xl font-black italic text-slate-800"><i class="fa-solid fa-images text-unpa mr-2"></i>Nuestro Recorrido</h2>
+                <div class="w-20"></div> </div>
+            
+            <div id="recorrido-feed" class="space-y-8">
+                <div class="text-center py-12 text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i>
+                    <p class="font-bold">Cargando publicaciones...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-disertar" class="view-section max-w-5xl mx-auto">
+            <button onclick="showView('mod-menu')" class="text-slate-400 mb-6 font-bold text-sm flex items-center hover:text-unpa"><i class="fa-solid fa-arrow-left mr-2"></i>Volver al Panel</button>
+            <div id="slide-container" class="bg-black rounded-3xl shadow-2xl overflow-hidden relative flex flex-col items-center justify-center" style="height: 70vh;">
+                <img id="slide-img" src="" alt="Diapositiva" class="max-w-full max-h-full object-contain animate-fadeIn">
+                <button id="btn-end-slide" onclick="showView('splash')" class="hidden absolute bottom-20 bg-unpa text-white px-8 py-4 rounded-full font-black shadow-2xl hover:scale-105 transition border-4 border-white z-20">
+                    Volver a la Página Principal
+                </button>
+                <div class="absolute inset-0 flex justify-between items-center px-4 pointer-events-none">
+                    <button onclick="changeSlide(-1)" class="w-14 h-14 bg-black/50 hover:bg-unpa text-white rounded-full flex items-center justify-center pointer-events-auto transition backdrop-blur-sm"><i class="fa-solid fa-chevron-left text-2xl"></i></button>
+                    <button onclick="changeSlide(1)" class="w-14 h-14 bg-black/50 hover:bg-unpa text-white rounded-full flex items-center justify-center pointer-events-auto transition backdrop-blur-sm"><i class="fa-solid fa-chevron-right text-2xl"></i></button>
+                </div>
+                <div class="absolute bottom-0 left-0 w-full h-2 bg-slate-800">
+                    <div id="slide-progress" class="bg-unpa h-full transition-all duration-300" style="width: 10%"></div>
+                </div>
+                <div class="absolute bottom-4 text-white/50 text-sm font-bold bg-black/50 px-3 py-1 rounded-full"><span id="slide-counter">1 / 9</span></div>
+            </div>
+        </div>
+
+        <div id="view-home-rcp" class="view-section">
+            <button onclick="showView('splash')" class="text-slate-400 mb-6 font-bold text-sm flex items-center hover:text-uart"><i class="fa-solid fa-arrow-left mr-2"></i>Volver al Inicio</button>
+            <h2 class="text-3xl font-black text-slate-800 mb-2 border-l-8 border-uart pl-4 uppercase italic">Laboratorio de Aprendizaje</h2>
+            <p class="text-slate-500 mb-8 ml-6">Selecciona un simulador para entrenar tus habilidades de emergencia.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button onclick="showView('scene')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-eye text-xl"></i></div><div><h4 class="font-black text-slate-800">1. Escena Segura</h4><p class="text-xs text-slate-500">Identifica riesgos visuales.</p></div></button>
+                <button onclick="initSim107(); showView('sim-107')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-phone-volume text-xl"></i></div><div><h4 class="font-black text-slate-800">2. Simulador 107</h4><p class="text-xs text-slate-500">Roleplay de llamada.</p></div></button>
+                <button onclick="initTriage(); showView('triage')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-users-rays text-xl"></i></div><div><h4 class="font-black text-slate-800">3. Triage Básico</h4><p class="text-xs text-slate-500">Toma de decisiones.</p></div></button>
+                <button onclick="initGameChain(); showView('game-chain')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-link text-xl"></i></div><div><h4 class="font-black text-slate-800">4. Cadena Vital</h4><p class="text-xs text-slate-500">Ordena los eslabones.</p></div></button>
+                <button onclick="initTapping(); showView('tapping')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-hand-pointer text-xl"></i></div><div><h4 class="font-black text-slate-800">5. Tapping BPM</h4><p class="text-xs text-slate-500">Prueba tu precisión.</p></div></button>
+                <button onclick="showView('metronome')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-red-100 text-uart rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-stopwatch text-xl"></i></div><div><h4 class="font-black text-slate-800">6. Metrónomo</h4><p class="text-xs text-slate-500">Guía animada a 110 BPM.</p></div></button>
+                <button onclick="showView('dea')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-bolt text-xl"></i></div><div><h4 class="font-black text-slate-800">7. Simulador DEA</h4><p class="text-xs text-slate-500">Misión con desfibrilador.</p></div></button>
+                <button onclick="showView('special-rcp')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-person-pregnant text-xl"></i></div><div><h4 class="font-black text-slate-800">8. Casos Especiales</h4><p class="text-xs text-slate-500">Niños, Embarazadas y PLS.</p></div></button>
+                <button onclick="startSurvivalQuiz()" class="bg-slate-900 text-white p-5 rounded-2xl shadow-lg border-2 border-uart hover:bg-black transition text-left flex items-center gap-4 md:col-span-1">
+                    <div class="w-12 h-12 bg-uart rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-skull-crossbones text-xl"></i></div>
+                    <div><h4 class="font-black text-lg">9. Supervivencia</h4><p class="text-xs text-slate-400">Contrarreloj. 3 Vidas.</p></div>
+                </button>
+            </div>
+        </div>
+
+        <div id="view-scene" class="view-section max-w-4xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-6"><h2 class="text-2xl font-black text-slate-800"><i class="fa-solid fa-glasses text-green-500 mr-3"></i>Escena Segura</h2><p class="text-slate-600 text-sm">Identifica y toca los 3 peligros antes de acercarte a la víctima.</p></div>
+            <div class="relative w-full aspect-video bg-slate-900 rounded-3xl overflow-hidden shadow-xl mb-6"><img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?auto=format&fit=crop&w=1200&q=80" class="w-full h-full object-cover opacity-90"><div class="hazard-zone flex" style="top: 20%; left: 15%; width: 12%; height: 20%;" onclick="foundHazard(this, 'Cables caídos')"></div><div class="hazard-zone flex" style="top: 60%; left: 45%; width: 18%; height: 25%;" onclick="foundHazard(this, 'Tráfico')"></div><div class="hazard-zone flex" style="top: 35%; left: 75%; width: 15%; height: 20%;" onclick="foundHazard(this, 'Derrame químico')"></div></div><div id="hazard-msg" class="p-6 bg-slate-50 rounded-2xl text-center font-bold">Encuentra los 3 peligros.</div>
+        </div>
+
+        <div id="view-sim-107" class="view-section max-w-3xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-slate-100 p-6 rounded-3xl border-4 border-slate-300 shadow-inner flex flex-col h-[500px]"><div class="text-center mb-4 border-b-2 pb-2"><h2 class="text-2xl font-black"><i class="fa-solid fa-phone text-blue-500 mr-2 animate-pulse"></i>Línea 107</h2></div><div id="chat-container" class="flex-grow overflow-y-auto flex flex-col mb-4 space-y-4 p-2"></div><div id="chat-options" class="flex flex-col gap-2 mt-auto"></div></div>
+        </div>
+
+        <div id="view-triage" class="view-section max-w-4xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-purple-100 text-center"><h2 class="text-3xl font-black mb-4"><i class="fa-solid fa-users-rays text-purple-500 mr-3"></i>Triage</h2><p class="mb-8">Estás solo. ¿A quién atiendes PRIMERO?</p><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="triage-cards"><button onclick="checkTriage(2, this)" class="triage-btn bg-slate-50 border-2 p-6 rounded-2xl hover:border-purple-500 text-left"><i class="fa-solid fa-person-falling text-4xl mb-4"></i><h4 class="font-black">Víctima A</h4><p class="text-sm">Llora y se agarra el brazo.</p></button><button onclick="checkTriage(1, this)" class="triage-btn bg-slate-50 border-2 p-6 rounded-2xl hover:border-purple-500 text-left"><i class="fa-solid fa-person-praying text-4xl mb-4"></i><h4 class="font-black">Víctima B</h4><p class="text-sm">Tirada, pálida, no responde, no respira.</p></button><button onclick="checkTriage(3, this)" class="triage-btn bg-slate-50 border-2 p-6 rounded-2xl hover:border-purple-500 text-left"><i class="fa-solid fa-person-walking text-4xl mb-4"></i><h4 class="font-black">Víctima C</h4><p class="text-sm">Camina desorientada.</p></button></div><div id="triage-feedback" class="mt-8 text-lg font-bold hidden p-4 rounded-xl"></div></div>
+        </div>
+
+        <div id="view-game-chain" class="view-section max-w-4xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-orange-200 text-center"><h2 class="text-3xl font-black mb-4"><i class="fa-solid fa-link text-orange-500 mr-3"></i>Ordena la Cadena</h2><p class="mb-8 text-sm">Toca un eslabón y luego otro para intercambiarlos.</p><div id="chain-game-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8"></div><button onclick="checkChainOrder()" class="bg-orange-500 text-white font-black py-4 px-10 rounded-2xl">Verificar Orden</button><div id="chain-game-feedback" class="mt-6 text-lg font-bold hidden p-4 rounded-xl"></div></div>
+        </div>
+
+        <div id="view-tapping" class="view-section max-w-xl mx-auto text-center"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-10 rounded-3xl shadow-sm border border-teal-200"><h2 class="text-3xl font-black mb-2"><i class="fa-solid fa-hand-pointer text-teal-500 mr-2"></i>Precisión de Ritmo</h2><p class="mb-8">Intenta mantener 100-120 BPM.</p><div class="flex justify-between bg-slate-50 p-4 rounded-2xl mb-8"><div><p class="text-xs font-bold text-slate-400">Tus BPM</p><p id="tap-bpm" class="text-3xl font-black font-mono">0</p></div><div><p class="text-xs font-bold text-slate-400">Estado</p><p id="tap-status" class="text-xl font-black text-slate-400">ESPERANDO</p></div></div><button id="btn-tap" onpointerdown="handleTap(event)" class="w-48 h-48 rounded-full bg-teal-500 text-white font-black text-2xl shadow-xl mb-6 select-none">TAP</button><button onclick="initTapping()" class="text-sm font-bold text-slate-400 underline">Reiniciar</button></div>
+        </div>
+
+        <div id="view-metronome" class="view-section text-center py-10 max-w-lg mx-auto relative"><div id="cambio-alert" class="cambio-alert">¡CAMBIO!</div><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 block font-bold text-sm text-left"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button><div class="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center relative overflow-hidden"><div id="prep-overlay" class="absolute inset-0 bg-slate-900/95 z-50 flex items-center justify-center hidden"><div id="prep-text" class="text-white font-black text-3xl text-center"></div></div><h2 class="text-3xl font-black text-slate-800 mb-2">110 BPM</h2><div class="flex justify-center items-end gap-8 mb-8 w-full border-b pb-6"><div class="text-center"><p class="text-xs font-bold text-slate-400">Tiempo</p><p id="metro-time" class="text-4xl font-black text-slate-700 font-mono">00:00</p></div><div class="text-center"><p class="text-xs font-bold text-slate-400">Compresiones</p><p id="metro-count" class="text-4xl font-black text-uart font-mono">0</p></div></div><div class="relative flex justify-center mb-10 w-full"><svg viewBox="0 0 240 240" class="w-56 h-56 bg-slate-50 rounded-3xl border-2 p-2 pulse-circle" id="metro-circle"><path d="M 60 200 L 200 200 L 200 180 C 200 150 180 140 150 140 L 90 140 C 70 140 60 160 60 200 Z" fill="#cbd5e1" /><circle cx="190" cy="110" r="30" fill="#cbd5e1" /><g class="rcp-hands"><path d="M 115 30 L 115 130" stroke="var(--uart-red)" stroke-width="15" stroke-linecap="round" /><rect x="95" y="115" width="40" height="25" rx="10" fill="var(--uart-red)" /></g></svg></div><button id="btn-metro" onclick="iniciarSecuenciaRCP()" class="px-12 py-5 bg-uart text-white font-black rounded-full shadow-xl w-full">Iniciar RCP</button></div></div>
+
+        <div id="view-dea" class="view-section max-w-5xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-4 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button><div id="dea-explore-mode"><h2 class="text-3xl font-black mb-8 text-center"><i class="fa-solid fa-bolt text-yellow-500 mr-2"></i>Conoce el DEA</h2><div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center"><div class="md:col-span-5 grid grid-cols-2 gap-4"><button onclick="showDeaInfo('power', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-power-off text-3xl text-green-500 mb-2"></i></button><button onclick="showDeaInfo('pads', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-notes-medical text-3xl text-blue-500 mb-2"></i></button><button onclick="showDeaInfo('shock', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-bolt text-3xl text-yellow-500 mb-2"></i></button><button onclick="showDeaInfo('speaker', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-volume-high text-3xl text-purple-500 mb-2"></i></button></div><div class="md:col-span-7 bg-white rounded-3xl p-8 min-h-[200px] flex flex-col justify-center"><div id="dea-info-content" class="text-center">Toca un elemento.</div></div></div><div class="text-center pt-8"><button onclick="startDeaMission()" class="bg-yellow-500 text-white font-black py-4 px-10 rounded-full">Iniciar Misión DEA</button></div></div><div id="dea-mission-mode" class="hidden max-w-3xl mx-auto"><div class="bg-white p-8 rounded-3xl border border-yellow-200"><div id="mission-scenario" class="mb-8 text-center"><h2 id="mission-question" class="text-2xl font-black"></h2><p id="mission-feedback" class="mt-4 font-bold"></p></div><div id="mission-options" class="space-y-3"></div></div></div></div>
+
+        <div id="view-quiz-survival" class="view-section max-w-2xl mx-auto mt-6"><div class="bg-slate-900 p-8 rounded-3xl shadow-2xl border-4 border-slate-800 relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-2 bg-slate-800"><div id="survival-time-bar" class="h-full bg-red-500 w-full transition-all ease-linear"></div></div><div class="flex justify-between items-center mb-8 mt-2 text-white"><div class="flex gap-2 text-red-500 text-2xl" id="survival-lives"></div><div class="font-black text-yellow-400 text-xl flex items-center gap-2"><i class="fa-solid fa-star"></i> <span id="survival-score">0</span></div></div><h3 id="survival-q-text" class="text-2xl font-black text-white mb-8 text-center">¡Prepárate!</h3><div id="survival-options" class="space-y-3"></div><div id="survival-feedback" class="mt-6 text-center font-bold text-lg hidden p-4 rounded-xl"></div></div><div class="mt-6 text-center"><button onclick="stopSurvivalQuiz(); showView('home-rcp')" class="text-slate-400 font-bold underline">Rendirse</button></div></div>
+
+        <div id="view-special-rcp" class="view-section max-w-4xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button><h2 class="text-3xl font-black mb-6"><i class="fa-solid fa-star text-red-500 mr-3"></i>Casos Especiales y PLS</h2><div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 mb-6"><h3 class="text-xl font-black mb-4">Embarazadas</h3><p>Regla de Oro: Otra persona empuja el útero a la izquierda.</p><h3 class="text-xl font-black mt-6 mb-4">Lactantes (Bebés)</h3><p>Comprimir con 2 dedos en el centro del pecho. Hundir 4 cm.</p></div><div class="bg-white p-8 rounded-3xl shadow-sm border border-green-200"><h3 class="text-2xl font-black mb-2">Posición Lateral de Seguridad (PLS)</h3><div class="flex justify-center bg-slate-50 rounded-2xl p-4"><svg viewBox="0 0 400 200" class="w-full max-w-sm h-auto"><path d="M 120 140 Q 150 160 220 130 Q 280 110 320 140 L 360 170" fill="none" stroke="#94a3b8" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/><path d="M 200 135 L 260 80 L 330 160" fill="none" stroke="#64748b" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/><circle cx="80" cy="145" r="25" fill="#fca5a5" stroke="#ef4444" stroke-width="4"/><path d="M 140 140 L 100 160 L 80 145" fill="none" stroke="#fca5a5" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><path d="M 140 130 L 120 90 L 80 140" fill="none" stroke="#f87171" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>
+
+        <div id="view-quiz" class="view-section max-w-3xl mx-auto mt-6">
+            <button onclick="showView('splash')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Abandonar Evaluación</button>
+            <div class="bg-white p-8 rounded-3xl shadow-xl">
+                <div class="flex justify-between items-center mb-8">
+                    <div class="flex-1 bg-slate-100 h-3 rounded-full"><div id="quiz-bar" class="h-full bg-unpa transition-all" style="width: 0%"></div></div>
+                    <span id="quiz-count" class="font-black px-3 py-1 bg-slate-100 rounded-lg ml-4"></span>
+                </div>
+                <h3 id="question-text" class="text-xl md:text-2xl font-black mb-8 text-center"></h3>
+                <div id="quiz-content-area" class="w-full"></div>
+                <div id="quiz-feedback" class="mt-6 text-center font-bold hidden p-4 rounded-xl"></div>
+            </div>
+        </div>
+
+        <div id="view-cert" class="view-section max-w-2xl mx-auto text-center mt-10">
+            <div id="certificate-target" class="bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-green-500"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. NAVEGACIÓN Y CONFIGURACIÓN INICIAL
+        // ==========================================
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            const target = document.getElementById(`view-${viewId}`);
+            if(target) target.classList.add('active');
+            
+            if (viewId === 'disertar') renderSlide();
+            if (viewId !== 'metronome') stopMetronome();
+            if (viewId === 'scene') resetScene();
+            if (viewId !== 'quiz-survival') stopSurvivalQuiz();
+            if (viewId === 'recorrido' && typeof window.fetchRecorrido === 'function') window.fetchRecorrido();
+
+            window.scrollTo(0,0);
+        }
+
+        // ==========================================
+        // 2. PANEL DE MODERACIÓN E INSTRUCTOR
+        // ==========================================
+        const cotejoItems = [
+            { id: 1, fase: 1, text: "Identifica que la zona sea segura" },
+            { id: 2, fase: 1, text: "Comprueba el Estado de Conciencia mediante estimulo táctil" },
+            { id: 3, fase: 2, text: "Activa el sistema de emergencia al comprometer una persona específica" },
+            { id: 4, fase: 2, text: "Le especifica a una persona la búsqueda del DEA" },
+            { id: 5, fase: 2, text: "Descubre el tórax" },
+            { id: 6, fase: 2, text: "Revisa respiración/pulso por 5-10 seg. con voz alta" },
+            { id: 7, fase: 2, text: "Coloca el DEA correctamente si dispusiera del mismo" },
+            { id: 8, fase: 2, text: "Realiza compresiones efectivas (posición de manos/brazos)" },
+            { id: 9, fase: 2, text: "Realiza compresiones con ritmo y profundidad adecuada (100-120/min)" },
+            { id: 10, fase: 2, text: "Ubica correctamente las manos en la zona media del tórax" },
+            { id: 11, fase: 2, text: "Permite la elevación del tórax entre las compresiones" },
+            { id: 12, fase: 2, text: "Mantiene la calma durante el procedimiento" },
+            { id: 13, fase: 2, text: "Coloca en posición segura de lateralidad al recuperar conciencia" }
+        ];
+
+        let historico = JSON.parse(localStorage.getItem('rcp_historico') || '[]');
+        let currentEvaluado = {};
+
+        function checkModAuth() {
+            const pin = document.getElementById('mod-pin').value;
+            if (pin === "5359") { document.getElementById('mod-pin').value = ""; showView('mod-menu'); } 
+            else { alert("PIN INCORRECTO"); document.getElementById('mod-pin').value = ""; }
+        }
+
+        function startCotejo() {
+            const name = document.getElementById('cotejo-name').value;
+            const dni = document.getElementById('cotejo-dni').value;
+            const email = document.getElementById('cotejo-email').value;
+            const tel = document.getElementById('cotejo-tel').value;
+
+            if(!name || !dni || !email || !tel) { alert("Complete todos los campos solicitados"); return; }
+
+            currentEvaluado = { name, dni, email, tel, date: new Date().toLocaleDateString() };
+            document.getElementById('eval-target-name').textContent = name;
+            
+            const f1 = document.getElementById('fase1-list'); f1.innerHTML = "";
+            const f2 = document.getElementById('fase2-list'); f2.innerHTML = "";
+
+            cotejoItems.forEach(item => {
+                const html = `<div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm"><p class="text-sm font-bold text-slate-700 w-2/3">${item.id}- ${item.text}</p><div class="flex gap-2"><label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="q${item.id}" value="1" class="w-4 h-4 accent-green-600"> <span class="text-xs font-bold">SI</span></label><label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="q${item.id}" value="0" checked class="w-4 h-4 accent-red-600"> <span class="text-xs font-bold">NO</span></label></div></div>`;
+                if(item.fase === 1) f1.innerHTML += html; else f2.innerHTML += html;
+            });
+            showView('cotejo-eval');
+        }
+
+        function calcCotejoResult() {
+            let score = 0; let detail = [];
+            cotejoItems.forEach(item => {
+                const val = parseInt(document.querySelector(`input[name="q${item.id}"]:checked`).value);
+                score += val; detail.push(val);
+            });
+            currentEvaluado.score = score; currentEvaluado.detail = detail;
+            historico.unshift(currentEvaluado);
+            localStorage.setItem('rcp_historico', JSON.stringify(historico));
+
+            let msg = `PUNTAJE OBTENIDO: ${score}/13\n\n`;
+            if(score >= 9) msg += "¡APROBADO FELICITACIONES!"; else msg += "NO ALCANZÓ EL MÍNIMO (9 PUNTOS).";
+            alert(msg); showView('mod-menu');
+        }
+
+        function renderHistorico() {
+            const body = document.getElementById('historico-body');
+            body.innerHTML = historico.map(h => `<tr class="border-b text-sm"><td class="p-4 text-slate-500 font-medium">${h.date}</td><td class="p-4 font-bold text-slate-800">${h.name}</td><td class="p-4 text-slate-600">${h.dni}</td><td class="p-4 text-slate-500">${h.email || '-'}</td><td class="p-4 text-slate-500">${h.tel || '-'}</td><td class="p-4 font-black ${h.score >= 9 ? 'text-green-600' : 'text-red-600'}">${h.score}/13</td></tr>`).join('');
+            showView('mod-historico');
+        }
+
+        let myChart = null;
+        function renderEstadisticas() {
+            document.getElementById('stat-total').textContent = historico.length;
+            const itemCounts = new Array(13).fill(0);
+            historico.forEach(h => { h.detail.forEach((val, idx) => { if(val === 1) itemCounts[idx]++; }); });
+            const percentages = itemCounts.map(count => historico.length ? Math.round((count / historico.length) * 100) : 0);
+
+            const ctx = document.getElementById('chartCotejo').getContext('2d');
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar', data: { labels: cotejoItems.map(i => `Pto ${i.id}`), datasets: [{ label: '% de Acierto por Actividad', data: percentages, backgroundColor: '#004a99cc', borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { tooltip: { callbacks: { label: (c) => `Acierto: ${c.raw}% (${itemCounts[c.dataIndex]} personas)` } } } }
+            });
+            showView('mod-stats');
+        }
+
+        // ==========================================
+        // 3. LÓGICA DE DISERTACIÓN (SLIDES EN GITHUB)
+        // ==========================================
+        const diapositivasURLs = [
+            "DIAPOSITIVA1.jpg", "DIAPOSITIVA2.jpg", "DIAPOSITIVA3.jpg", 
+            "DIAPOSITIVA4.jpg", "DIAPOSITIVA5.jpg", "DIAPOSITIVA6.jpg", 
+            "DIAPOSITIVA7.jpg", "DIAPOSITIVA8.jpg", "DIAPOSITIVA9.jpg"
+        ];
+        
+        let currentSlideIdx = 0;
+        function renderSlide() { 
+            const imgEl = document.getElementById('slide-img');
+            imgEl.src = diapositivasURLs[currentSlideIdx];
+            imgEl.classList.remove('animate-fadeIn'); void imgEl.offsetWidth; imgEl.classList.add('animate-fadeIn');
+
+            document.getElementById('slide-counter').textContent = `${currentSlideIdx + 1} / ${diapositivasURLs.length}`; 
+            document.getElementById('slide-progress').style.width = `${((currentSlideIdx + 1) / diapositivasURLs.length) * 100}%`; 
+
+            if(currentSlideIdx === diapositivasURLs.length - 1) {
+                document.getElementById('btn-end-slide').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-end-slide').classList.add('hidden');
+            }
+        }
+        function changeSlide(dir) { currentSlideIdx += dir; if(currentSlideIdx < 0) currentSlideIdx = 0; if(currentSlideIdx >= diapositivasURLs.length) currentSlideIdx = diapositivasURLs.length - 1; renderSlide(); }
+
+        // ==========================================
+        // 4. NUESTRO RECORRIDO (SUBIR Y MOSTRAR FOTOS)
+        // ==========================================
+        let base64ImageToUpload = null;
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400; // Compresión alta
+                        let scaleSize = 1;
+                        if(img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = img.width * scaleSize;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        base64ImageToUpload = canvas.toDataURL('image/jpeg', 0.5); // Calidad 50%
+                        
+                        document.getElementById('registro-preview').src = base64ImageToUpload;
+                        document.getElementById('preview-container').classList.remove('hidden');
+                        document.getElementById('upload-buttons').classList.add('hidden');
+                        input.value = '';
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function clearPreview() {
+            base64ImageToUpload = null;
+            document.getElementById('registro-preview').src = "";
+            document.getElementById('preview-container').classList.add('hidden');
+            document.getElementById('upload-buttons').classList.remove('hidden');
+        }
+
+        function uploadRecorrido() {
+            if(!base64ImageToUpload) { alert("Sube una foto primero"); return; }
+            const desc = document.getElementById('registro-desc').value;
+            if(typeof window.savePostToCloud === 'function') {
+                const btn = document.getElementById('btn-upload-registro');
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> PUBLICANDO...`;
+                window.savePostToCloud(base64ImageToUpload, desc, () => {
+                    clearPreview();
+                    document.getElementById('registro-desc').value = "";
+                    btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> PUBLICAR FOTO`;
+                    alert("¡Publicado en Nuestro Recorrido!");
+                    showView('mod-menu');
+                });
+            } else {
+                alert("Conectando con la base de datos... intente de nuevo en unos segundos.");
+            }
+        }
+
+        function renderFeed(posts) {
+            const feed = document.getElementById('recorrido-feed');
+            if(posts.length === 0) {
+                feed.innerHTML = `<div class="text-center py-12 text-slate-400"><i class="fa-solid fa-images text-4xl mb-4 opacity-50"></i><p class="font-bold">Aún no hay publicaciones en el recorrido.</p></div>`;
+                return;
+            }
+            
+            feed.innerHTML = posts.map(p => `
+                <div class="bg-white rounded-3xl shadow-md overflow-hidden border border-slate-100">
+                    <img src="${p.image}" class="w-full h-64 object-cover bg-slate-100">
+                    <div class="p-6">
+                        <p class="text-slate-800 font-medium mb-4">${p.desc || ''}</p>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4 border-b pb-4"><i class="fa-solid fa-clock mr-1"></i> ${new Date(p.timestamp?.toDate() || Date.now()).toLocaleDateString()}</p>
+                        <div class="space-y-3 mb-4 max-h-32 overflow-y-auto">
+                            ${(p.comments || []).map(c => `<div class="bg-slate-50 p-3 rounded-xl text-sm border"><p class="text-slate-700">${c}</p></div>`).join('')}
+                            ${(p.comments || []).length === 0 ? '<p class="text-xs text-slate-400 italic">Sé el primero en comentar.</p>' : ''}
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="comment-input-${p.id}" class="flex-grow p-3 bg-slate-50 border rounded-xl text-sm outline-none focus:border-unpa" placeholder="Escribe un comentario...">
+                            <button onclick="submitComment('${p.id}')" class="bg-unpa text-white px-5 rounded-xl font-bold hover:bg-blue-800 transition"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function submitComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const text = input.value.trim();
+            if(text && typeof window.addCommentToCloud === 'function') {
+                window.addCommentToCloud(postId, text);
+                input.value = '';
+            }
+        }
+
+        // ==========================================
+        // 5. LABORATORIO: SIMULADORES RCP Y DEA
+        // ==========================================
+        let hazF = 0; function resetScene() { hazF=0; document.querySelectorAll('.hazard-zone').forEach(e=>{e.classList.remove('found');e.innerHTML='';}); document.getElementById('hazard-msg').innerHTML="Encuentra los 3 peligros."; }
+        function foundHazard(el, n) { if(el.classList.contains('found'))return; el.classList.add('found'); el.innerHTML='<i class="fa-solid fa-xmark text-white text-3xl font-black"></i>'; hazF++; document.getElementById('hazard-msg').innerHTML=`<span class="text-red-600">PELIGRO:</span> ${n}`; if(hazF===3) setTimeout(()=>document.getElementById('hazard-msg').innerHTML="¡ESCENA SEGURA!", 1000); }
+        const chatScen = [ { t: "107: ¿Emergencia?", o: [{t: "Adulto inconsciente Roca 230.", n: 1, c: true}] }, { t: "107: Entendido. ¿Respira?", o: [{t: "No respira.", n: 2, c: true}] }, { t: "107: Es un paro. Inicie RCP.", o: [{t: "Inicio compresiones.", n: 99, c: true}] } ];
+        let chSt = 0; function initSim107() { document.getElementById('chat-container').innerHTML=''; chSt=0; rndChat(); }
+        function rndChat() { if(chSt===99) { document.getElementById('chat-options').innerHTML=`<button onclick="showView('home-rcp')" class="bg-uart text-white p-3 rounded-xl font-bold">Terminar</button>`; return; } const s=chatScen[chSt]; adBub(s.t,false); const oC=document.getElementById('chat-options'); oC.innerHTML=''; s.o.forEach(o=>{ const b=document.createElement('button'); b.className="bg-white border-2 border-uart text-uart p-3 rounded-xl font-bold"; b.textContent=o.t; b.onclick=()=>{ adBub(o.t,true); oC.innerHTML=''; setTimeout(()=>{chSt=o.n; rndChat();}, 1000); }; oC.appendChild(b); }); }
+        function adBub(t, u) { const d=document.createElement('div'); d.className=`chat-bubble ${u?'chat-user':'chat-operator'}`; d.textContent=t; document.getElementById('chat-container').appendChild(d); }
+        function initTriage() { document.querySelectorAll('.triage-btn').forEach(b=>{b.disabled=false; b.classList.remove('opacity-50');}); document.getElementById('triage-feedback').classList.add('hidden'); }
+        function checkTriage(p, b) { document.querySelectorAll('.triage-btn').forEach(x=>{x.disabled=true; x.classList.add('opacity-50');}); b.classList.remove('opacity-50'); const f=document.getElementById('triage-feedback'); f.classList.remove('hidden'); if(p===1){f.innerHTML="¡Correcto! Víctima B en paro."; f.className="mt-8 font-bold p-4 rounded-xl bg-green-100 text-green-800 block";}else{f.innerHTML="Error. Víctima B prioridad."; f.className="mt-8 font-bold p-4 rounded-xl bg-red-100 text-red-800 block"; setTimeout(initTriage,2000);} }
+        const cOk = ["1. Llamado", "2. RCP", "3. DEA", "4. SVA", "5. Post-Paro", "6. Recuperación"]; let cC = [];
+        function initGameChain() { cC=[...cOk].sort(()=>Math.random()-0.5); rndCh(); document.getElementById('chain-game-feedback').classList.add('hidden'); }
+        function rndCh() { const l=document.getElementById('chain-game-list'); l.innerHTML=''; cC.forEach((it,i)=>{const e=document.createElement('div'); e.className="chain-link bg-slate-50 p-4 rounded-xl border text-sm font-bold flex items-center justify-center text-center h-24"; e.textContent=it; e.onclick=()=>hCT(i); l.appendChild(e);}); }
+        let cF = null; function hCT(i) { const els=document.querySelectorAll('.chain-link'); if(cF===null){cF=i; els[i].classList.add('border-uart');}else{[cC[cF], cC[i]]=[cC[i], cC[cF]]; rndCh(); cF=null;} }
+        function checkChainOrder() { const ok=cC.every((v,i)=>v===cOk[i]); const f=document.getElementById('chain-game-feedback'); f.classList.remove('hidden'); f.textContent=ok?"¡Perfecto!":"Orden incorrecto."; f.className=ok?"mt-6 font-bold p-4 rounded-xl bg-green-100 text-green-700 block":"mt-6 font-bold p-4 rounded-xl bg-red-100 text-red-700 block"; }
+        let tT = []; function initTapping() { tT=[]; document.getElementById('tap-bpm').textContent="0"; document.getElementById('tap-status').textContent="INICIA"; }
+        function handleTap(e) { e.preventDefault(); tT.push(Date.now()); if(tT.length>6) tT.shift(); if(tT.length>=2){ let d=0; for(let i=1;i<tT.length;i++) d+=(tT[i]-tT[i-1]); const b=Math.round(60000/(d/(tT.length-1))); document.getElementById('tap-bpm').textContent=b; const st=document.getElementById('tap-status'); if(b>=100&&b<=120){st.textContent="¡PERFECTO!"; st.className="text-xl font-black text-green-500";}else{st.textContent=b<100?"¡LENTO!":"¡RÁPIDO!"; st.className="text-xl font-black text-red-500";} } }
+        let aC; let mAct = false; let mInt = null; let lBt = 0; const bpM = 60000 / 110; let tmI = null; let tSc = 0; let cpC = 0; let cyc = 1; let sqA = false;
+        function pBp(al = false) { if (!aC) aC = new (window.AudioContext || window.webkitAudioContext)(); if (aC.state === 'suspended') aC.resume(); const o = aC.createOscillator(); const g = aC.createGain(); o.type = al?'square':'sine'; o.frequency.setValueAtTime(al?1200:800, aC.currentTime); g.gain.setValueAtTime(0.5, aC.currentTime); g.gain.exponentialRampToValueAtTime(0.01, aC.currentTime + 0.1); o.connect(g); g.connect(aC.destination); o.start(); o.stop(aC.currentTime + 0.1); }
+        function upTD() { document.getElementById('metro-time').textContent = `${Math.floor(tSc/60).toString().padStart(2,'0')}:${(tSc%60).toString().padStart(2,'0')}`; document.getElementById('metro-count').textContent = cpC; }
+        window.iniciarSecuenciaRCP = function() { if (mAct || sqA) { stopMetronome(); return; } sqA = true; const b = document.getElementById('btn-metro'); b.textContent = "DETENER"; b.classList.replace('bg-uart', 'bg-slate-800'); document.getElementById('prep-overlay').classList.remove('hidden'); const p = ["1. ESCENA SEGURA", "3...", "2...", "1...", "¡YA!"]; let i = 0; const stp = () => { if(!sqA) return; if(i < p.length) { document.getElementById('prep-text').textContent = p[i]; i++; setTimeout(stp, 1000); } else { document.getElementById('prep-overlay').classList.add('hidden'); sqA = false; arrM(); } }; stp(); };
+        function arrM() { mAct = true; tSc = 0; cpC = 0; cyc = 1; let st = Date.now(); tmI = setInterval(() => { tSc = Math.floor((Date.now() - st) / 1000); upTD(); if(tSc === 60 && cyc === 1) { pBp(true); document.getElementById('cambio-alert').style.display = 'block'; setTimeout(() => { document.getElementById('cambio-alert').style.display = 'none'; cyc = 2; st = Date.now(); }, 2000); } else if(tSc === 60 && cyc === 2) { stopMetronome(); alert("Fin de ciclo."); } }, 500); const cir = document.getElementById('metro-circle'); const tk = (now) => { if(!mAct) return; if(now - lBt >= bpM) { lBt = now; pBp(); cpC++; cir.classList.add('pulse-active'); setTimeout(() => cir.classList.remove('pulse-active'), 100); } mInt = requestAnimationFrame(tk); }; lBt = performance.now(); tk(lBt); }
+        function stopMetronome() { mAct = false; sqA = false; clearInterval(tmI); cancelAnimationFrame(mInt); document.getElementById('prep-overlay').classList.add('hidden'); const b=document.getElementById('btn-metro'); b.textContent="INICIAR RCP"; b.classList.replace('bg-slate-800', 'bg-uart'); }
+        function showDeaInfo(k) { document.getElementById('dea-info-content').innerHTML = `<h3 class="text-xl font-black mb-2">${k}</h3><p>Descripción técnica.</p>`; }
+        function startDeaMission() { document.getElementById('dea-explore-mode').classList.add('hidden'); document.getElementById('dea-mission-mode').classList.remove('hidden'); document.getElementById('mission-question').textContent = "¡Llegó el DEA! ¿Qué haces primero?"; document.getElementById('mission-options').innerHTML = `<button class="w-full bg-slate-50 p-4 border-2 rounded-xl mb-2 font-bold hover:bg-slate-100" onclick="alert('Incorrecto.')">Pegar parches</button><button class="w-full bg-slate-50 p-4 border-2 rounded-xl font-bold hover:bg-slate-100" onclick="alert('¡Correcto!'); showView('home-rcp');">Encenderlo</button>`; }
+        const qSurv = [ {q:"Ritmo RCP", o:["60", "110"], c:1}, {q:"Profundidad adulto", o:["2cm", "5cm"], c:1}, {q:"Primero", o:["RCP", "Escena"], c:1} ];
+        let sLv = 3; let sSc = 0; let sTl = 100; let sTm = null; let sQx = 0;
+        function startSurvivalQuiz() { sLv=3; sSc=0; sQx=0; showView('quiz-survival'); nxS(); }
+        function nxS() { if(sLv<=0) { alert("Game Over. Puntos: " + sSc); showView('home-rcp'); return; } if(sQx >= qSurv.length) { alert("¡Sobreviviste! Puntos: " + sSc); showView('home-rcp'); return; } document.getElementById('survival-lives').innerHTML = '<i class="fa-solid fa-heart"></i>'.repeat(sLv); document.getElementById('survival-score').textContent = sSc; const q = qSurv[sQx]; document.getElementById('survival-q-text').textContent = q.q; const opt = document.getElementById('survival-options'); opt.innerHTML=''; q.o.forEach((o,i) => { const b = document.createElement('button'); b.className="w-full bg-slate-800 text-white p-4 rounded-xl mb-2 font-bold"; b.textContent=o; b.onclick=()=> { clearInterval(sTm); if(i===q.c) { sSc+=100; sQx++; nxS(); } else { sLv--; sQx++; nxS(); } }; opt.appendChild(b); }); sTl=100; clearInterval(sTm); sTm = setInterval(() => { sTl--; document.getElementById('survival-time-bar').style.width = sTl+'%'; if(sTl<=0) { clearInterval(sTm); sLv--; sQx++; nxS(); } }, 100); }
+        function stopSurvivalQuiz() { clearInterval(sTm); }
+
+        // ==========================================
+        // 6. AUTO EVALUACIÓN (SIN DATOS)
+        // ==========================================
+        const questionsRCP = [ 
+            { type: 'text', q: "Ritmo de RCP adulto", o: ["100-120/min", "60/min", "Lo más rápido posible"], c: 0 }, 
+            { type: 'text', q: "Si la escena es insegura", o: ["Entro igual con cuidado", "No entro hasta que sea segura"], c: 1 }, 
+            { type: 'text', q: "Compresiones niño de 5 años", o: ["Solo con dos dedos", "Una o dos manos, hundiendo 5cm"], c: 1 },
+            { type: 'text', q: "Lactante (Bebé)", o: ["Dos dedos, centro del pecho", "Talón de la mano"], c: 0 },
+            { type: 'text', q: "Embarazada en paro", o: ["Otra persona empuja el útero a la izquierda", "No hacer RCP"], c: 0 },
+            { type: 'text', q: "Profundidad adulto", o: ["Al menos 5 a 6 cm", "Solo 2 cm"], c: 0 },
+            { type: 'text', q: "Primer paso con DEA", o: ["Pegar parches", "Encenderlo para escuchar instrucciones"], c: 1 },
+            { type: 'text', q: "Mientras el DEA analiza", o: ["Nadie debe tocar al paciente", "Sigo haciendo compresiones"], c: 0 }
+        ]; 
+        while(questionsRCP.length<30) questionsRCP.push({...questionsRCP[Math.floor(Math.random()*8)]});
+        
+        let quizData = []; let quizIdx = 0; let quizScore = 0;
+        
+        window.startAutoEvaluation = () => { 
+            quizData = [...questionsRCP].sort(() => 0.5 - Math.random()).slice(0, 15); 
+            quizIdx = 0; quizScore = 0; 
+            document.getElementById('quiz-bar').style.width = '0%';
+            showView('quiz'); 
+            renderQuestion(); 
+        };
+        
+        function renderQuestion() { 
+            const q = quizData[quizIdx]; 
+            document.getElementById('quiz-count').textContent = `${quizIdx + 1}/15`; 
+            document.getElementById('quiz-bar').style.width = `${(quizIdx/15)*100}%`; 
+            document.getElementById('question-text').textContent = q.q; 
+            const area = document.getElementById('quiz-content-area'); area.innerHTML=''; 
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            area.innerHTML = `<div class="space-y-4">${q.o.map((opt, i) => `<button onclick="submitAnswer(${i === q.c}, this)" class="w-full text-left p-5 bg-slate-50 border-2 rounded-2xl font-bold hover:bg-slate-100 transition hover:border-unpa">${opt}</button>`).join('')}</div>`; 
+        }
+        
+        window.submitAnswer = (isCorrect, btn) => { 
+            const btns = btn.parentElement.querySelectorAll('button'); btns.forEach(b=>b.disabled=true); 
+            btn.classList.add(isCorrect ? 'bg-green-100' : 'bg-red-100'); 
+            btn.classList.add(isCorrect ? 'border-green-500' : 'border-red-500');
+            if(isCorrect) quizScore++; 
+            const fb = document.getElementById('quiz-feedback'); fb.classList.remove('hidden'); fb.textContent = isCorrect?"¡Correcto!":"Incorrecto."; 
+            fb.className = isOk ? "mt-6 font-bold p-4 rounded-xl bg-green-100 text-green-700 block border border-green-200" : "mt-6 font-bold p-4 rounded-xl bg-red-100 text-red-700 block border border-red-200"; 
+            setTimeout(() => { quizIdx++; if(quizIdx < 15) renderQuestion(); else finishQuiz(); }, 1000); 
+        };
+        
+        function finishQuiz() {
+            const pass = quizScore >= 11;
+            const target = document.getElementById('certificate-target');
+            if(pass) {
+                target.innerHTML = `
+                    <div class="mb-6"><i class="fa-solid fa-trophy text-6xl text-yellow-400 drop-shadow-md"></i></div>
+                    <h2 class="text-4xl font-black text-slate-900 mb-2">¡AUTO EVALUACIÓN SUPERADA!</h2>
+                    <p class="text-slate-500 font-bold mb-8">Puntuación: ${quizScore}/15 respuestas correctas.</p>
+                    <p class="text-slate-700 max-w-md mx-auto mb-8">Has demostrado tener los conocimientos teóricos necesarios para actuar en una emergencia.</p>
+                    <button onclick="showView('splash')" class="w-full bg-unpa text-white p-4 rounded-2xl font-bold hover:bg-blue-800 transition">Volver al Inicio</button>
+                `;
+            } else { 
+                target.className = "bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-red-500";
+                target.innerHTML = `
+                    <div class="mb-6"><i class="fa-solid fa-book-open-reader text-6xl text-slate-300"></i></div>
+                    <h2 class="text-3xl font-black text-slate-900 mb-2">HAY QUE SEGUIR REPASANDO</h2>
+                    <p class="text-slate-500 font-bold mb-8">Puntuación: ${quizScore}/15 respuestas correctas.</p>
+                    <p class="text-slate-700 max-w-md mx-auto mb-8">No has alcanzado el mínimo aprobatorio de 11 respuestas correctas. Te sugerimos repasar el material.</p>
+                    <button onclick="showView('splash')" class="w-full bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold hover:bg-slate-300 transition">Volver al Inicio</button>
+                `;
+            }
+            showView('cert');
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, updateDoc, doc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxiONUtNU5SXj5i10Rs_19FpPJg0PT2P0",
+            authDomain: "rcp-dea-en-la-comunidad.firebaseapp.com",
+            projectId: "rcp-dea-en-la-comunidad",
+            storageBucket: "rcp-dea-en-la-comunidad.firebasestorage.app",
+            messagingSenderId: "740657059817",
+            appId: "1:740657059817:web:52f6ec03dd175838f21d78"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const artifactId = 'rcp-taller-turbio';
+        let currentUser = null;
+        let unsubscribeFeed = null;
+
+        const initAuth = async () => {
+            try {
+                await signInAnonymously(auth);
+                console.log("Conectado a Firebase anónimamente");
+            } catch (e) {
+                console.error("Error de autenticación:", e);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => { currentUser = user; });
+
+        window.savePostToCloud = async (imageBase64, desc, callback) => {
+            if (!currentUser) return;
+            try {
+                const colRef = collection(db, 'artifacts', artifactId, 'public', 'data', 'recorrido');
+                await addDoc(colRef, {
+                    image: imageBase64,
+                    desc: desc,
+                    comments: [],
+                    timestamp: serverTimestamp(),
+                    userId: currentUser.uid
+                });
+                callback();
+            } catch (e) { console.error("Error upload:", e); }
+        };
+
+        window.fetchRecorrido = () => {
+            if(!currentUser) { setTimeout(window.fetchRecorrido, 1000); return; }
+            if(unsubscribeFeed) unsubscribeFeed();
+            const q = query(collection(db, 'artifacts', artifactId, 'public', 'data', 'recorrido'), orderBy('timestamp', 'desc'));
+            
+            unsubscribeFeed = onSnapshot(q, (snapshot) => {
+                const posts = [];
+                snapshot.forEach((doc) => { posts.push({ id: doc.id, ...doc.data() }); });
+                renderFeed(posts);
+            }, (error) => {
+                console.error("Feed error:", error);
+            });
+        };
+
+        window.addCommentToCloud = async (postId, text) => {
+            if (!currentUser) return;
+            try {
+                const docRef = doc(db, 'artifacts', artifactId, 'public', 'data', 'recorrido', postId);
+                await updateDoc(docRef, { comments: arrayUnion(text) });
+            } catch (e) { console.error("Error comment:", e); }
+        };
+    </script>
+</body>
+</html>
+    
