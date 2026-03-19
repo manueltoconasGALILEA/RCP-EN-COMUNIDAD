@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNPA UART - Capacitación RCP y DEA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        
+        :root {
+            --unpa-blue: #004a99;
+            --uart-red: #e30613;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f1f5f9; 
+            touch-action: manipulation;
+        }
+        
+        .bg-unpa { background-color: var(--unpa-blue); }
+        .text-unpa { color: var(--unpa-blue); }
+        .bg-uart { background-color: var(--uart-red); }
+        .text-uart { color: var(--uart-red); }
+        
+        /* Navegacion y Vistas */
+        .view-section { display: none; animation: fadeIn 0.4s ease-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilo Institucional */
+        .card-university { background: white; border-radius: 1.5rem; border-bottom: 4px solid var(--unpa-blue); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        
+        /* Elementos Interactivos */
+        .chain-link, .dea-step { cursor: grab; user-select: none; transition: all 0.2s; }
+        .chain-link:active, .dea-step:active { cursor: grabbing; }
+        .drag-over { border: 2px dashed var(--uart-red) !important; background-color: #fff5f5 !important; }
+        
+        /* Chat 107 */
+        .chat-bubble { max-width: 80%; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; animation: fadeIn 0.3s ease-out; }
+        .chat-operator { background-color: #e2e8f0; color: #1e293b; border-bottom-left-radius: 0; align-self: flex-start; }
+        .chat-user { background-color: var(--uart-red); color: white; border-bottom-right-radius: 0; align-self: flex-end; }
+
+        /* Metrónomo y Animaciones RCP */
+        .pulse-circle { transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; }
+        .pulse-active { transform: scale(1.05); box-shadow: 0 0 30px rgba(227, 6, 19, 0.4); }
+        .rcp-hands { transition: transform 0.1s ease-out; transform-origin: center; }
+        .pulse-active .rcp-hands { transform: translateY(15px); } /* Simula la compresión */
+
+        .cambio-alert { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--uart-red); color: white; font-weight: 900; font-size: 3rem;
+            padding: 2rem 4rem; border-radius: 1rem; z-index: 100;
+            animation: popInAndOut 2.5s forwards; pointer-events: none; display: none; text-align: center;
+        }
+        @keyframes popInAndOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            30% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        /* Escena Segura */
+        .hazard-zone { position: absolute; border-radius: 50%; background: rgba(239, 68, 68, 0.2); border: 2px dashed #ef4444; cursor: pointer; transition: all 0.3s; animation: pulse-border 2s infinite; }
+        .hazard-zone:hover { background: rgba(239, 68, 68, 0.4); }
+        .hazard-zone.found { background: rgba(220, 38, 38, 0.8) !important; border: 3px solid #b91c1c; animation: none; display: flex; align-items: center; justify-content: center; }
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* Evaluacion Visual */
+        .img-option { transition: all 0.2s; cursor: pointer; border: 4px solid transparent; }
+        .img-option:hover { transform: scale(1.02); border-color: #cbd5e1; }
+        .img-option.selected-correct { border-color: #22c55e !important; box-shadow: 0 0 15px rgba(34, 197, 94, 0.5); }
+        .img-option.selected-wrong { border-color: #ef4444 !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+        .chest-target-container { position: relative; cursor: crosshair; }
+        .click-marker { position: absolute; width: 30px; height: 30px; background: rgba(59, 130, 246, 0.8); border: 3px solid white; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; z-index: 10; }
+        .correct-zone-indicator { position: absolute; border: 3px dashed #22c55e; background: rgba(34, 197, 94, 0.3); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 5; display: none; }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 pb-12">
+
+    <!-- HEADER INSTITUCIONAL UNPA UART -->
+    <header class="bg-white border-b-4 border-unpa shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-4 cursor-pointer" onclick="showView('splash')">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-unpa rounded flex items-center justify-center text-white font-black text-xs">UNPA</div>
+                    <div class="h-8 w-px bg-slate-200"></div>
+                    <div class="w-10 h-10 bg-uart rounded-full flex items-center justify-center text-white text-lg"><i class="fa-solid fa-graduation-cap"></i></div>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg tracking-tight leading-none text-unpa">UART <span class="text-slate-400 font-bold">UNPA</span></h1>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Río Turbio - Santa Cruz</p>
+                </div>
+            </div>
+            <button onclick="showView('mod-login')" class="text-slate-400 hover:text-unpa transition p-2"><i class="fa-solid fa-user-shield text-xl"></i></button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 mt-6">
+
+        <!-- ========================================== -->
+        <!-- 1. SPLASH / MENÚ PRINCIPAL                 -->
+        <!-- ========================================== -->
+        <div id="view-splash" class="view-section active">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-6xl font-black text-slate-900 mb-4 tracking-tighter italic uppercase">Programa de Capacitación</h2>
+                <p class="text-slate-500 text-lg max-w-2xl mx-auto font-medium">Reanimación Cardiopulmonar (RCP) y Desfibrilador Externo Automático (DEA).</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <button onclick="showView('disertar')" class="bg-white rounded-3xl p-8 border-2 border-slate-100 shadow-xl hover:border-unpa transition group text-left flex flex-col h-full">
+                    <div class="w-16 h-16 bg-blue-50 text-unpa rounded-2xl flex items-center justify-center mb-6 group-hover:bg-unpa group-hover:text-white transition"><i class="fa-solid fa-person-chalkboard text-3xl"></i></div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-2">Disertar</h3>
+                    <p class="text-slate-500 text-sm flex-grow">Material de apoyo visual interactivo para instructores (reemplaza presentación estática).</p>
+                    <div class="mt-6 text-unpa font-bold text-sm uppercase tracking-widest">Presentación UART <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                </button>
+
+                <button onclick="showView('home-rcp');" class="bg-white rounded-3xl p-8 border-2 border-slate-100 shadow-xl hover:border-uart transition group text-left flex flex-col h-full">
+                    <div class="w-16 h-16 bg-red-50 text-uart rounded-2xl flex items-center justify-center mb-6 group-hover:bg-uart group-hover:text-white transition"><i class="fa-solid fa-heart-pulse text-3xl"></i></div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-2">Laboratorio</h3>
+                    <p class="text-slate-500 text-sm flex-grow">Simuladores interactivos: Metrónomo visual, Triage, Llamada 107 y entrenamiento con DEA.</p>
+                    <div class="mt-6 text-uart font-bold text-sm uppercase tracking-widest">Simuladores <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                </button>
+                
+                <button onclick="startEvaluation()" class="bg-slate-800 rounded-3xl p-8 border-2 border-slate-700 shadow-xl hover:bg-black transition group text-left flex flex-col h-full text-white">
+                    <div class="w-16 h-16 bg-slate-700 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-500 transition"><i class="fa-solid fa-clipboard-check text-3xl"></i></div>
+                    <h3 class="text-2xl font-black mb-2">Evaluación</h3>
+                    <p class="text-slate-400 text-sm flex-grow">Rinde el examen teórico-práctico de 15 preguntas y obtén tu certificado institucional.</p>
+                    <div class="mt-6 text-green-400 font-bold text-sm uppercase tracking-widest">Examen Final <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                </button>
+            </div>
+            
+            <div class="mt-12 text-center">
+                <div class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-500">
+                    <i class="fa-solid fa-shield-halved text-unpa"></i> LEY NACIONAL 27.159: Prevención Integral de Muerte Súbita
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 2. MÓDULO DISERTAR (PRESENTACIÓN)          -->
+        <!-- ========================================== -->
+        <div id="view-disertar" class="view-section max-w-4xl mx-auto">
+            <button onclick="showView('splash')" class="text-slate-400 mb-6 font-bold text-sm flex items-center hover:text-unpa"><i class="fa-solid fa-arrow-left mr-2"></i>Menú Principal</button>
+            <div id="slide-container" class="bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden relative min-h-[500px] flex flex-col">
+                <div class="h-2 w-full bg-slate-100 flex"><div id="slide-progress" class="bg-unpa h-full transition-all duration-300" style="width: 10%"></div></div>
+                <div class="p-8 md:p-12 flex-grow flex flex-col justify-center"><div id="slide-content" class="animate-fadeIn"></div></div>
+                <div class="p-6 bg-slate-50 border-t flex justify-between items-center">
+                    <button onclick="changeSlide(-1)" class="p-3 rounded-xl hover:bg-slate-200 transition text-unpa font-bold"><i class="fa-solid fa-chevron-left mr-2"></i>Anterior</button>
+                    <span id="slide-counter" class="font-black text-slate-400">1 / 6</span>
+                    <button onclick="changeSlide(1)" class="bg-unpa text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-800 transition">Siguiente <i class="fa-solid fa-chevron-right ml-2"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 3. MENÚ LABORATORIO RCP                    -->
+        <!-- ========================================== -->
+        <div id="view-home-rcp" class="view-section">
+            <button onclick="showView('splash')" class="text-slate-400 mb-6 font-bold text-sm flex items-center hover:text-uart"><i class="fa-solid fa-arrow-left mr-2"></i>Volver al Inicio</button>
+            <h2 class="text-3xl font-black text-slate-800 mb-2 border-l-8 border-uart pl-4 uppercase italic">Laboratorio Interactivo RCP</h2>
+            <p class="text-slate-500 mb-8 ml-6">Selecciona un simulador para entrenar tus habilidades de emergencia.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button onclick="showView('scene')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-eye text-xl"></i></div><div><h4 class="font-black text-slate-800">1. Escena Segura</h4><p class="text-xs text-slate-500">Identifica riesgos visuales.</p></div></button>
+                <button onclick="initSim107(); showView('sim-107')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-phone-volume text-xl"></i></div><div><h4 class="font-black text-slate-800">2. Simulador 107</h4><p class="text-xs text-slate-500">Roleplay de llamada.</p></div></button>
+                <button onclick="initTriage(); showView('triage')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-users-rays text-xl"></i></div><div><h4 class="font-black text-slate-800">3. Triage Básico</h4><p class="text-xs text-slate-500">Toma de decisiones.</p></div></button>
+                <button onclick="initGameChain(); showView('game-chain')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-link text-xl"></i></div><div><h4 class="font-black text-slate-800">4. Cadena Vital</h4><p class="text-xs text-slate-500">Ordena los eslabones.</p></div></button>
+                <button onclick="initTapping(); showView('tapping')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-hand-pointer text-xl"></i></div><div><h4 class="font-black text-slate-800">5. Tapping BPM</h4><p class="text-xs text-slate-500">Prueba tu precisión.</p></div></button>
+                <button onclick="showView('metronome')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-red-100 text-uart rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-stopwatch text-xl"></i></div><div><h4 class="font-black text-slate-800">6. Metrónomo</h4><p class="text-xs text-slate-500">Guía animada a 110 BPM.</p></div></button>
+                <button onclick="showView('dea')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-bolt text-xl"></i></div><div><h4 class="font-black text-slate-800">7. Simulador DEA</h4><p class="text-xs text-slate-500">Misión con desfibrilador.</p></div></button>
+                <button onclick="showView('special-rcp')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-uart transition text-left flex items-center gap-4"><div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-person-pregnant text-xl"></i></div><div><h4 class="font-black text-slate-800">8. Casos Especiales</h4><p class="text-xs text-slate-500">Niños, Embarazadas y PLS.</p></div></button>
+                <button onclick="startSurvivalQuiz()" class="bg-slate-900 text-white p-5 rounded-2xl shadow-lg border-2 border-uart hover:bg-black transition text-left flex items-center gap-4 md:col-span-1">
+                    <div class="w-12 h-12 bg-uart rounded-xl flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-skull-crossbones text-xl"></i></div>
+                    <div><h4 class="font-black text-lg">9. Supervivencia</h4><p class="text-xs text-slate-400">Contrarreloj. 3 Vidas.</p></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 4. HERRAMIENTAS RCP INDIVIDUALES           -->
+        <!-- ========================================== -->
+
+        <!-- 4.1 Escena Segura -->
+        <div id="view-scene" class="view-section max-w-4xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-6"><h2 class="text-2xl font-black text-slate-800"><i class="fa-solid fa-glasses text-green-500 mr-3"></i>Escena Segura</h2><p class="text-slate-600 text-sm">Identifica y toca los 3 peligros antes de acercarte a la víctima.</p></div>
+            <div class="relative w-full aspect-video bg-slate-900 rounded-3xl overflow-hidden shadow-xl mb-6">
+                <!-- Usando un placeholder claro o una imagen genérica si se requiere. La URL original de Unsplash se mantiene por compatibilidad, pero puede ser ajustada -->
+                <img src="https://images.unsplash.com/photo-1544027993-37dbfe43562a?auto=format&fit=crop&w=1200&q=80" class="w-full h-full object-cover opacity-90" alt="escena con riesgos">
+                <div class="hazard-zone flex" style="top: 20%; left: 15%; width: 12%; height: 20%;" onclick="foundHazard(this, 'Cables caídos')"></div>
+                <div class="hazard-zone flex" style="top: 60%; left: 45%; width: 18%; height: 25%;" onclick="foundHazard(this, 'Tráfico')"></div>
+                <div class="hazard-zone flex" style="top: 35%; left: 75%; width: 15%; height: 20%;" onclick="foundHazard(this, 'Derrame químico')"></div>
+            </div>
+            <div id="hazard-msg" class="p-6 bg-slate-50 rounded-2xl text-center font-bold">Encuentra los 3 peligros.</div>
+        </div>
+
+        <!-- 4.2 Simulador 107 -->
+        <div id="view-sim-107" class="view-section max-w-3xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-slate-100 p-6 rounded-3xl border-4 border-slate-300 shadow-inner flex flex-col h-[500px]">
+                <div class="text-center mb-4 border-b-2 pb-2"><h2 class="text-2xl font-black"><i class="fa-solid fa-phone text-blue-500 mr-2 animate-pulse"></i>Línea 107</h2></div>
+                <div id="chat-container" class="flex-grow overflow-y-auto flex flex-col mb-4 space-y-4 p-2"></div>
+                <div id="chat-options" class="flex flex-col gap-2 mt-auto"></div>
+            </div>
+        </div>
+
+        <!-- 4.3 Triage Básico -->
+        <div id="view-triage" class="view-section max-w-4xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-purple-100 text-center"><h2 class="text-3xl font-black mb-4"><i class="fa-solid fa-users-rays text-purple-500 mr-3"></i>Triage</h2><p class="mb-8">Estás solo. ¿A quién atiendes PRIMERO?</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="triage-cards">
+                    <button onclick="checkTriage(2, this)" class="triage-btn bg-slate-50 border-2 p-6 rounded-2xl hover:border-purple-500 text-left"><i class="fa-solid fa-person-falling text-4xl mb-4"></i><h4 class="font-black">Víctima A</h4><p class="text-sm">Llora y se agarra el brazo.</p></button>
+                    <button onclick="checkTriage(1, this)" class="triage-btn bg-slate-50 border-2 p-6 rounded-2xl hover:border-purple-500 text-left"><i class="fa-solid fa-person-praying text-4xl mb-4"></i><h4 class="font-black">Víctima B</h4><p class="text-sm">Tirada, pálida, no responde, no respira.</p></button>
+                    <button onclick="checkTriage(3, this)" class="triage-btn bg-slate-50 border-2 p-6 rounded-2xl hover:border-purple-500 text-left"><i class="fa-solid fa-person-walking text-4xl mb-4"></i><h4 class="font-black">Víctima C</h4><p class="text-sm">Camina desorientada.</p></button>
+                </div>
+                <div id="triage-feedback" class="mt-8 text-lg font-bold hidden p-4 rounded-xl"></div>
+            </div>
+        </div>
+
+        <!-- 4.4 Juego de la Cadena -->
+        <div id="view-game-chain" class="view-section max-w-4xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-orange-200 text-center"><h2 class="text-3xl font-black mb-4"><i class="fa-solid fa-link text-orange-500 mr-3"></i>Ordena la Cadena</h2><p class="mb-8 text-sm">Toca un eslabón y luego otro para intercambiarlos y formar la Cadena de Supervivencia de Adultos.</p>
+                <div id="chain-game-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8"></div>
+                <button onclick="checkChainOrder()" class="bg-orange-500 text-white font-black py-4 px-10 rounded-2xl">Verificar Orden</button>
+                <div id="chain-game-feedback" class="mt-6 text-lg font-bold hidden p-4 rounded-xl"></div>
+            </div>
+        </div>
+
+        <!-- 4.5 Entrenador de Ritmo -->
+        <div id="view-tapping" class="view-section max-w-xl mx-auto text-center"><button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-10 rounded-3xl shadow-sm border border-teal-200"><h2 class="text-3xl font-black mb-2"><i class="fa-solid fa-hand-pointer text-teal-500 mr-2"></i>Precisión de Ritmo</h2><p class="mb-8">Intenta mantener 100-120 BPM.</p>
+                <div class="flex justify-between bg-slate-50 p-4 rounded-2xl mb-8"><div><p class="text-xs font-bold text-slate-400">Tus BPM</p><p id="tap-bpm" class="text-3xl font-black font-mono">0</p></div><div><p class="text-xs font-bold text-slate-400">Estado</p><p id="tap-status" class="text-xl font-black text-slate-400">ESPERANDO</p></div></div>
+                <button id="btn-tap" onpointerdown="handleTap(event)" class="w-48 h-48 rounded-full bg-teal-500 text-white font-black text-2xl shadow-xl mb-6 select-none">TAP</button>
+                <button onclick="initTapping()" class="text-sm font-bold text-slate-400 underline">Reiniciar</button>
+            </div>
+        </div>
+
+        <!-- 4.6 Metrónomo Animado -->
+        <div id="view-metronome" class="view-section text-center py-10 max-w-lg mx-auto relative">
+            <div id="cambio-alert" class="cambio-alert">¡CAMBIO!</div>
+            <button onclick="showView('home-rcp')" class="text-slate-400 mb-6 block font-bold text-sm text-left"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div class="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center relative overflow-hidden">
+                <div id="prep-overlay" class="absolute inset-0 bg-slate-900/95 z-50 flex items-center justify-center hidden"><div id="prep-text" class="text-white font-black text-3xl text-center"></div></div>
+                <h2 class="text-3xl font-black text-slate-800 mb-2">110 BPM</h2>
+                <div class="flex justify-center items-end gap-8 mb-8 w-full border-b pb-6">
+                    <div class="text-center"><p class="text-xs font-bold text-slate-400">Tiempo</p><p id="metro-time" class="text-4xl font-black text-slate-700 font-mono">00:00</p></div>
+                    <div class="text-center"><p class="text-xs font-bold text-slate-400">Compresiones</p><p id="metro-count" class="text-4xl font-black text-uart font-mono">0</p></div>
+                </div>
+                <!-- Animacion SVG -->
+                <div class="relative flex justify-center mb-10 w-full">
+                    <svg viewBox="0 0 240 240" class="w-56 h-56 bg-slate-50 rounded-3xl border-2 p-2 pulse-circle" id="metro-circle">
+                        <path d="M 60 200 L 200 200 L 200 180 C 200 150 180 140 150 140 L 90 140 C 70 140 60 160 60 200 Z" fill="#cbd5e1" />
+                        <circle cx="190" cy="110" r="30" fill="#cbd5e1" />
+                        <g class="rcp-hands">
+                            <path d="M 115 30 L 115 130" stroke="var(--uart-red)" stroke-width="15" stroke-linecap="round" />
+                            <rect x="95" y="115" width="40" height="25" rx="10" fill="var(--uart-red)" />
+                        </g>
+                    </svg>
+                </div>
+                <button id="btn-metro" onclick="iniciarSecuenciaRCP()" class="px-12 py-5 bg-uart text-white font-black rounded-full shadow-xl w-full">Iniciar RCP</button>
+            </div>
+        </div>
+
+        <!-- 4.7 Simulador DEA -->
+        <div id="view-dea" class="view-section max-w-5xl mx-auto"><button onclick="showView('home-rcp')" class="text-slate-400 mb-4 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <div id="dea-explore-mode"><h2 class="text-3xl font-black mb-8 text-center"><i class="fa-solid fa-bolt text-yellow-500 mr-2"></i>Conoce el DEA</h2>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    <div class="md:col-span-5 grid grid-cols-2 gap-4">
+                        <button onclick="showDeaInfo('power', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-power-off text-3xl text-green-500 mb-2"></i></button>
+                        <button onclick="showDeaInfo('pads', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-notes-medical text-3xl text-blue-500 mb-2"></i></button>
+                        <button onclick="showDeaInfo('shock', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-bolt text-3xl text-yellow-500 mb-2"></i></button>
+                        <button onclick="showDeaInfo('speaker', this)" class="dea-part-btn bg-white border-2 p-4 rounded-2xl"><i class="fa-solid fa-volume-high text-3xl text-purple-500 mb-2"></i></button>
+                    </div>
+                    <div class="md:col-span-7 bg-white rounded-3xl p-8 min-h-[200px] flex flex-col justify-center"><div id="dea-info-content" class="text-center">Toca un elemento.</div></div>
+                </div>
+                <div class="text-center pt-8"><button onclick="startDeaMission()" class="bg-yellow-500 text-white font-black py-4 px-10 rounded-full">Iniciar Misión DEA</button></div>
+            </div>
+            <div id="dea-mission-mode" class="hidden max-w-3xl mx-auto">
+                <div class="bg-white p-8 rounded-3xl border border-yellow-200">
+                    <div id="mission-scenario" class="mb-8 text-center"><h2 id="mission-question" class="text-2xl font-black"></h2><p id="mission-feedback" class="mt-4 font-bold"></p></div>
+                    <div id="mission-options" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4.8 Modo Supervivencia -->
+        <div id="view-quiz-survival" class="view-section max-w-2xl mx-auto mt-6">
+            <div class="bg-slate-900 p-8 rounded-3xl shadow-2xl border-4 border-slate-800 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-slate-800"><div id="survival-time-bar" class="h-full bg-red-500 w-full transition-all ease-linear"></div></div>
+                <div class="flex justify-between items-center mb-8 mt-2 text-white">
+                    <div class="flex gap-2 text-red-500 text-2xl" id="survival-lives"></div>
+                    <div class="font-black text-yellow-400 text-xl flex items-center gap-2"><i class="fa-solid fa-star"></i> <span id="survival-score">0</span></div>
+                </div>
+                <h3 id="survival-q-text" class="text-2xl font-black text-white mb-8 leading-snug text-center">¡Prepárate!</h3>
+                <div id="survival-options" class="space-y-3"></div>
+                <div id="survival-feedback" class="mt-6 text-center font-bold text-lg hidden p-4 rounded-xl"></div>
+            </div>
+            <div class="mt-6 text-center"><button onclick="stopSurvivalQuiz(); showView('home-rcp')" class="text-slate-400 font-bold underline">Rendirse</button></div>
+        </div>
+
+        <!-- 4.9 Casos Especiales y PLS -->
+        <div id="view-special-rcp" class="view-section max-w-4xl mx-auto">
+            <button onclick="showView('home-rcp')" class="text-slate-400 mb-6 font-bold text-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+            <h2 class="text-3xl font-black mb-6"><i class="fa-solid fa-star text-red-500 mr-3"></i>Casos Especiales y PLS</h2>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 mb-6">
+                <h3 class="text-xl font-black mb-4">Embarazadas</h3><p>Regla de Oro: Otra persona debe empujar suavemente el útero hacia el lado izquierdo.</p>
+                <h3 class="text-xl font-black mt-6 mb-4">Lactantes (Bebés)</h3><p>Comprimir con 2 dedos en el centro del pecho. Hundir 4 cm.</p>
+            </div>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-green-200">
+                <h3 class="text-2xl font-black mb-2">Posición Lateral de Seguridad (PLS)</h3><p class="text-sm mb-6">Para víctimas inconscientes que SÍ respiran.</p>
+                <div class="flex justify-center bg-slate-50 rounded-2xl p-4">
+                    <svg viewBox="0 0 400 200" class="w-full max-w-sm h-auto">
+                        <path d="M 120 140 Q 150 160 220 130 Q 280 110 320 140 L 360 170" fill="none" stroke="#94a3b8" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M 200 135 L 260 80 L 330 160" fill="none" stroke="#64748b" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="80" cy="145" r="25" fill="#fca5a5" stroke="#ef4444" stroke-width="4"/>
+                        <path d="M 140 140 L 100 160 L 80 145" fill="none" stroke="#fca5a5" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M 140 130 L 120 90 L 80 140" fill="none" stroke="#f87171" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 5. EVALUACIONES Y CERTIFICADO              -->
+        <!-- ========================================== -->
+        <div id="view-register" class="view-section max-w-md mx-auto mt-10">
+            <div class="bg-white p-8 rounded-3xl shadow-xl">
+                <h2 class="text-2xl font-black mb-4 text-unpa">Datos Académicos</h2>
+                <input type="text" id="input-name" class="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-xl mb-4" placeholder="Nombre Completo">
+                <input type="number" id="input-dni" class="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-xl mb-6" placeholder="DNI">
+                <button onclick="saveUserAndStart()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl transition">Iniciar Examen</button>
+                <button onclick="showView('splash')" class="w-full text-slate-400 font-bold mt-4 text-sm underline">Cancelar</button>
+            </div>
+        </div>
+        
+        <div id="view-quiz" class="view-section max-w-3xl mx-auto mt-6">
+            <div class="bg-white p-8 rounded-3xl shadow-xl">
+                <div class="flex justify-between items-center mb-8">
+                    <div class="flex-1 bg-slate-100 h-3 rounded-full"><div id="quiz-bar" class="h-full bg-uart transition-all" style="width: 0%"></div></div>
+                    <span id="quiz-count" class="font-black px-3 py-1 bg-slate-100 rounded-lg ml-4"></span>
+                </div>
+                <h3 id="question-text" class="text-xl md:text-2xl font-black mb-8 text-center"></h3>
+                <div id="quiz-content-area" class="w-full"></div>
+                <div id="quiz-feedback" class="mt-6 text-center font-bold hidden p-4 rounded-xl"></div>
+            </div>
+        </div>
+        
+        <div id="view-cert" class="view-section"><div id="certificate-target"></div></div>
+
+    </main>
+
+    <script>
+        // --- NAVEGACIÓN ---
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            const target = document.getElementById(`view-${viewId}`);
+            if(target) target.classList.add('active');
+            
+            if (viewId === 'disertar') renderSlide();
+            if (viewId !== 'metronome') stopMetronome();
+            if (viewId === 'scene') resetScene();
+            if (viewId !== 'quiz-survival') stopSurvivalQuiz();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==========================================
+        // MÓDULOS DE RCP (Interactivos)
+        // ==========================================
+
+        // 1. Escena Segura
+        let hazardsFound = 0;
+        function resetScene() { hazardsFound = 0; document.querySelectorAll('.hazard-zone').forEach(el => { el.classList.remove('found'); el.innerHTML = ''; }); document.getElementById('hazard-msg').innerHTML = "Encuentra los 3 peligros."; }
+        function foundHazard(el, name) { if(el.classList.contains('found')) return; el.classList.add('found'); el.innerHTML = '<i class="fa-solid fa-xmark text-white text-3xl font-black"></i>'; hazardsFound++; document.getElementById('hazard-msg').innerHTML = `<span class="text-red-600">PELIGRO:</span> ${name}`; if(hazardsFound===3) setTimeout(() => { document.getElementById('hazard-msg').innerHTML = "¡ESCENA SEGURA! Puedes proceder."; }, 1500); }
+
+        // 2. Sim 107
+        const chatScenario = [ { text: "107: ¿Emergencia?", isUser: false, options: [{text: "Adulto inconsciente calle Roca 230.", next: 1, correct: true}] }, { text: "107: Entendido. ¿Respira?", isUser: false, options: [{text: "No respira.", next: 2, correct: true}] }, { text: "107: Es un paro. Inicie RCP.", isUser: false, options: [{text: "Inicio compresiones.", next: 99, correct: true}] } ];
+        let chatStep = 0;
+        function initSim107() { document.getElementById('chat-container').innerHTML = ''; chatStep = 0; renderChat(); }
+        function renderChat() { if(chatStep===99) { document.getElementById('chat-options').innerHTML = `<button onclick="showView('home-rcp')" class="bg-uart text-white p-3 rounded-xl font-bold">Terminar</button>`; return; } const s = chatScenario[chatStep]; addBubble(s.text, false); const optC = document.getElementById('chat-options'); optC.innerHTML = ''; s.options.forEach(o => { const b = document.createElement('button'); b.className = "bg-white border-2 border-uart text-uart p-3 rounded-xl font-bold"; b.textContent = o.text; b.onclick = () => { addBubble(o.text, true); optC.innerHTML=''; setTimeout(() => { chatStep = o.next; renderChat(); }, 1000); }; optC.appendChild(b); }); }
+        function addBubble(text, isUser) { const d = document.createElement('div'); d.className = `chat-bubble ${isUser ? 'chat-user' : 'chat-operator'}`; d.textContent = text; document.getElementById('chat-container').appendChild(d); }
+
+        // 3. Triage
+        function initTriage() { document.querySelectorAll('.triage-btn').forEach(b => { b.disabled=false; b.classList.remove('opacity-50'); }); document.getElementById('triage-feedback').classList.add('hidden'); }
+        function checkTriage(prio, btn) { document.querySelectorAll('.triage-btn').forEach(b => { b.disabled=true; b.classList.add('opacity-50'); }); btn.classList.remove('opacity-50'); const fb = document.getElementById('triage-feedback'); fb.classList.remove('hidden'); if(prio===1) { fb.innerHTML = "¡Correcto! Víctima B está en paro."; fb.className="mt-8 font-bold p-4 rounded-xl bg-green-100 text-green-800 block"; } else { fb.innerHTML = "Error. Víctima B requiere RCP inmediata."; fb.className="mt-8 font-bold p-4 rounded-xl bg-red-100 text-red-800 block"; setTimeout(initTriage, 2500); } }
+
+        // 4. Cadena
+        const cCorrect = ["1. Llamado", "2. RCP", "3. DEA", "4. SVA", "5. Post-Paro", "6. Recuperación"]; let cCur = [];
+        function initGameChain() { cCur = [...cCorrect].sort(()=>Math.random()-0.5); renderChain(); document.getElementById('chain-game-feedback').classList.add('hidden'); }
+        function renderChain() { const list = document.getElementById('chain-game-list'); list.innerHTML=''; cCur.forEach((item, i) => { const el = document.createElement('div'); el.className="chain-link bg-slate-50 p-4 rounded-xl border text-sm font-bold flex items-center justify-center text-center h-24"; el.textContent=item; el.onclick=()=>handleCT(i); list.appendChild(el); }); }
+        let cFirst = null; function handleCT(i) { const els = document.querySelectorAll('.chain-link'); if(cFirst===null) { cFirst=i; els[i].classList.add('border-uart'); } else { [cCur[cFirst], cCur[i]] = [cCur[i], cCur[cFirst]]; renderChain(); cFirst=null; } }
+        function checkChainOrder() { const ok = cCur.every((v,i)=>v===cCorrect[i]); const fb = document.getElementById('chain-game-feedback'); fb.classList.remove('hidden'); fb.textContent = ok ? "¡Perfecto!" : "Orden incorrecto."; fb.className = ok ? "mt-6 font-bold p-4 rounded-xl bg-green-100 text-green-700 block" : "mt-6 font-bold p-4 rounded-xl bg-red-100 text-red-700 block"; }
+
+        // 5. Tapping
+        let tapTimes = [];
+        function initTapping() { tapTimes=[]; document.getElementById('tap-bpm').textContent="0"; document.getElementById('tap-status').textContent="INICIA"; }
+        function handleTap(e) { e.preventDefault(); tapTimes.push(Date.now()); if(tapTimes.length>6) tapTimes.shift(); if(tapTimes.length>=2) { let d=0; for(let i=1;i<tapTimes.length;i++) d+=(tapTimes[i]-tapTimes[i-1]); const bpm=Math.round(60000/(d/(tapTimes.length-1))); document.getElementById('tap-bpm').textContent=bpm; const st=document.getElementById('tap-status'); if(bpm>=100&&bpm<=120) { st.textContent="¡PERFECTO!"; st.className="text-xl font-black text-green-500"; } else { st.textContent=bpm<100?"¡LENTO!":"¡RÁPIDO!"; st.className="text-xl font-black text-red-500"; } } }
+
+        // 6. Metrónomo
+        let audioCtx; let metroActive = false; let metroInterval = null; let lastBeat = 0; const bpmMs = 60000 / 110;
+        let timerInterval = null; let totalSeconds = 0; let compressionCount = 0; let currentCycle = 1; let sequenceActive = false;
+        function playBeep(isAlert = false) { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = isAlert?'square':'sine'; o.frequency.setValueAtTime(isAlert?1200:800, audioCtx.currentTime); g.gain.setValueAtTime(0.5, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.1); }
+        function updateTimerDisplay() { const mins = Math.floor(totalSeconds / 60); const secs = totalSeconds % 60; document.getElementById('metro-time').textContent = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`; document.getElementById('metro-count').textContent = compressionCount; }
+        window.iniciarSecuenciaRCP = function() { if (metroActive || sequenceActive) { stopMetronome(); showView('home-rcp'); return; } sequenceActive = true; const btn = document.getElementById('btn-metro'); btn.textContent = "DETENER"; btn.classList.replace('bg-uart', 'bg-slate-800'); document.getElementById('prep-overlay').classList.remove('hidden'); const pasos = ["1. ESCENA SEGURA", "3...", "2...", "1...", "¡YA!"]; let i = 0; const step = () => { if(!sequenceActive) return; if(i < pasos.length) { document.getElementById('prep-text').textContent = pasos[i]; i++; setTimeout(step, 1000); } else { document.getElementById('prep-overlay').classList.add('hidden'); sequenceActive = false; arrancarMetronomoReal(); } }; step(); };
+        function arrancarMetronomoReal() { metroActive = true; totalSeconds = 0; compressionCount = 0; currentCycle = 1; let startTime = Date.now(); timerInterval = setInterval(() => { totalSeconds = Math.floor((Date.now() - startTime) / 1000); updateTimerDisplay(); if(totalSeconds === 60 && currentCycle === 1) { playBeep(true); document.getElementById('cambio-alert').style.display = 'block'; setTimeout(() => { document.getElementById('cambio-alert').style.display = 'none'; currentCycle = 2; startTime = Date.now(); }, 2000); } else if(totalSeconds === 60 && currentCycle === 2) { stopMetronome(); alert("Fin del ciclo de 2 minutos."); } }, 500); const circle = document.getElementById('metro-circle'); const tick = (now) => { if(!metroActive) return; if(now - lastBeat >= bpmMs) { lastBeat = now; playBeep(); compressionCount++; circle.classList.add('pulse-active'); setTimeout(() => circle.classList.remove('pulse-active'), 100); } metroInterval = requestAnimationFrame(tick); }; lastBeat = performance.now(); tick(lastBeat); }
+        function stopMetronome() { metroActive = false; sequenceActive = false; clearInterval(timerInterval); cancelAnimationFrame(metroInterval); document.getElementById('prep-overlay').classList.add('hidden'); document.getElementById('btn-metro').textContent = "INICIAR RCP"; document.getElementById('btn-metro').classList.replace('bg-slate-800', 'bg-uart'); }
+
+        // 7. DEA
+        const deaElements = { power: { title: "Encendido", desc: "El paso más importante. Activa las instrucciones por voz." }, pads: { title: "Parches", desc: "Uno superior derecho, otro inferior izquierdo." }, shock: { title: "Descarga", desc: "Presionar solo si el DEA lo indica y nadie toca a la víctima." }, speaker: { title: "Altavoz", desc: "Sigue las instrucciones verbales atentamente." } };
+        function showDeaInfo(k) { document.getElementById('dea-info-content').innerHTML = `<h3 class="text-xl font-black mb-2">${deaElements[k].title}</h3><p>${deaElements[k].desc}</p>`; }
+        function startDeaMission() { document.getElementById('dea-explore-mode').classList.add('hidden'); document.getElementById('dea-mission-mode').classList.remove('hidden'); document.getElementById('mission-question').textContent = "¡Llegó el DEA! ¿Qué haces primero?"; document.getElementById('mission-options').innerHTML = `<button class="w-full bg-slate-50 p-4 border-2 rounded-xl mb-2 font-bold hover:bg-slate-100" onclick="alert('Incorrecto. Siempre enciende el equipo primero.')">Pegar parches</button><button class="w-full bg-slate-50 p-4 border-2 rounded-xl font-bold hover:bg-slate-100" onclick="alert('¡Correcto! Fin Misión'); showView('home-rcp');">Encenderlo</button>`; }
+
+        // 8. Supervivencia
+        const qSurv = [ {q:"Ritmo RCP", o:["60", "110", "150"], c:1}, {q:"Profundidad adulto", o:["2cm", "5cm", "10cm"], c:1}, {q:"Primero al ver colapso", o:["RCP", "Escena", "Gritar"], c:1}, {q:"Teléfono de emergencia", o:["107", "112", "911"], c:0}, {q:"Relación Compresión/Ventilación", o:["15:2", "30:2", "30:1"], c:1} ];
+        let survLives = 3; let survScore = 0; let survTimeLeft = 100; let survTimer = null; let survQIdx = 0;
+        function startSurvivalQuiz() { survLives=3; survScore=0; survQIdx=0; showView('quiz-survival'); nextSurvival(); }
+        function nextSurvival() { if(survLives<=0) { alert("Game Over. Puntos: " + survScore); showView('home-rcp'); return; } if(survQIdx >= qSurv.length) { alert("¡Sobreviviste! Puntos: " + survScore); showView('home-rcp'); return; } document.getElementById('survival-lives').innerHTML = '<i class="fa-solid fa-heart"></i>'.repeat(survLives); document.getElementById('survival-score').textContent = survScore; const q = qSurv[survQIdx]; document.getElementById('survival-q-text').textContent = q.q; const opts = document.getElementById('survival-options'); opts.innerHTML=''; q.o.forEach((opt,i) => { const b = document.createElement('button'); b.className="w-full bg-slate-800 text-white p-4 rounded-xl mb-2 font-bold hover:bg-slate-700"; b.textContent=opt; b.onclick=()=> { clearInterval(survTimer); if(i===q.c) { survScore+=100; survQIdx++; nextSurvival(); } else { survLives--; survQIdx++; nextSurvival(); } }; opts.appendChild(b); }); survTimeLeft=100; clearInterval(survTimer); survTimer = setInterval(() => { survTimeLeft--; document.getElementById('survival-time-bar').style.width = survTimeLeft+'%'; if(survTimeLeft<=0) { clearInterval(survTimer); survLives--; survQIdx++; nextSurvival(); } }, 100); }
+        function stopSurvivalQuiz() { clearInterval(survTimer); }
+
+        // ==========================================
+        // MÓDULO DISERTAR
+        // ==========================================
+        const slides = [
+            { title: "RCP y DEA", subtitle: "Reanimación Cardiopulmonar", content: `<div class="flex flex-col items-center gap-6"><div class="w-32 h-32 bg-red-100 text-uart rounded-full flex items-center justify-center"><i class="fa-solid fa-heart-pulse text-6xl"></i></div><p class="text-unpa font-black text-xl">UART UNPA</p></div>` },
+            { title: "PARADA CARDIORRESPIRATORIA", subtitle: "¿Qué sucede?", content: `<ul class="space-y-2"><li class="p-3 bg-red-50 rounded-xl text-uart font-bold">4 min: Daño cerebral</li><li class="p-3 bg-red-100 rounded-xl text-uart font-black">10 min: Muerte Cerebral</li></ul>` },
+            { title: "CAUSAS", subtitle: "Peligros y Prevención", content: `<p class="font-bold mb-2">Monóxido de Carbono, Electrocución, Infarto, Asfixia.</p><p class="text-sm">Identificar la causa asegura tu bienestar antes de actuar.</p>` },
+            { title: "CADENA DE SUPERVIVENCIA", subtitle: "Eslabones Vitales", content: `<p class="italic font-bold">"EL ÚNICO RCP QUE SE HACE MAL, ES EL QUE NO SE HACE"</p>` },
+            { title: "LEY 27.159", subtitle: "Responsabilidad Civil", content: `<p>Artículo 11: No existe responsabilidad civil ni penal si el auxilio fue de buena fe.</p>` },
+            { title: "EL DEA", subtitle: "Desfibrilador", content: `<i class="fa-solid fa-bolt text-5xl text-yellow-500 mb-4 block text-center"></i><p class="text-center font-bold">Obligatorio en lugares de acceso público.</p>` }
+        ];
+        let currentSlideIdx = 0;
+        function renderSlide() { const s = slides[currentSlideIdx]; document.getElementById('slide-content').innerHTML = `<h2 class="text-4xl md:text-5xl font-black text-unpa uppercase italic mb-2">${s.title}</h2><h4 class="text-xl font-bold text-slate-400 mb-8">${s.subtitle}</h4><div class="text-lg text-slate-700">${s.content}</div>`; document.getElementById('slide-counter').textContent = `${currentSlideIdx + 1} / ${slides.length}`; document.getElementById('slide-progress').style.width = `${((currentSlideIdx + 1) / slides.length) * 100}%`; }
+        function changeSlide(dir) { currentSlideIdx += dir; if(currentSlideIdx < 0) currentSlideIdx = 0; if(currentSlideIdx >= slides.length) currentSlideIdx = slides.length - 1; renderSlide(); }
+
+        // ==========================================
+        // EVALUACIÓN FINAL (BANCO DE 30 RCP)
+        // ==========================================
+        const imgTorso = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="100%" height="100%"><rect width="400" height="500" fill="#f8fafc"/><path d="M 120 50 C 120 20, 280 20, 280 50 C 280 80, 360 100, 380 150 L 380 500 L 20 500 L 20 150 C 40 100, 120 80, 120 50 Z" fill="#fed7aa" stroke="#fdba74" stroke-width="4"/><path d="M 140 120 Q 200 140 260 120" fill="none" stroke="#fb923c" stroke-width="4" stroke-linecap="round"/><rect x="190" y="140" width="20" height="180" rx="10" fill="#f97316" opacity="0.4"/><circle cx="120" cy="230" r="12" fill="#fb923c"/><circle cx="280" cy="230" r="12" fill="#fb923c"/></svg>');
+        const imgHandsC = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#f0fdf4"/><rect x="70" y="50" width="60" height="100" rx="30" fill="#bbf7d0" stroke="#22c55e" stroke-width="4" transform="rotate(-15 100 100)"/><rect x="70" y="50" width="60" height="100" rx="30" fill="#86efac" stroke="#16a34a" stroke-width="4" transform="rotate(15 100 100)"/><path d="M 60 100 Q 100 120 140 100" fill="none" stroke="#16a34a" stroke-width="4"/><path d="M 65 80 Q 100 100 135 80" fill="none" stroke="#16a34a" stroke-width="4"/><text x="100" y="180" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#16a34a">Entrelazadas</text></svg>');
+        const imgHandsA = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#f8fafc"/><rect x="30" y="50" width="60" height="100" rx="30" fill="#fca5a5" stroke="#ef4444" stroke-width="4"/><rect x="110" y="50" width="60" height="100" rx="30" fill="#fca5a5" stroke="#ef4444" stroke-width="4"/><text x="100" y="180" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#64748b">Separadas</text></svg>');
+        const imgHandsB = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#f8fafc"/><rect x="70" y="50" width="60" height="100" rx="30" fill="#fca5a5" stroke="#ef4444" stroke-width="4"/><text x="100" y="180" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#64748b">Una mano</text></svg>');
+
+        const questionsRCP = [ 
+            { type: 'image-click', q: "Toca el lugar exacto para RCP en el adulto.", img: imgTorso, target: { x: 50, y: 56, radius: 12 }, fbOk: "¡Correcto!", fbErr: "Va en el centro del pecho." },
+            { type: 'image-select', q: "Selecciona el esquema correcto de las manos para adulto:", oImages: [imgHandsA, imgHandsB, imgHandsC], c: 2 },
+            { type: 'text', q: "Ritmo de RCP adulto", o: ["100-120/min", "60/min"], c: 0 }, 
+            { type: 'text', q: "Escena insegura", o: ["Entro igual", "No entro hasta que sea segura"], c: 1 }, 
+            { type: 'text', q: "Niño de 5 años", o: ["Dos dedos", "Una o dos manos, 5cm"], c: 1 },
+            { type: 'text', q: "Lactante (Bebé)", o: ["Dos dedos, 4cm", "Talón de la mano"], c: 0 },
+            { type: 'text', q: "Embarazada RCP", o: ["Desplazar útero a la izquierda", "No hacer RCP"], c: 0 },
+            { type: 'text', q: "Profundidad adulto", o: ["2cm", "5 a 6 cm"], c: 1 },
+            { type: 'text', q: "Primer paso DEA", o: ["Pegar parches", "Encenderlo"], c: 1 },
+            { type: 'text', q: "Si el DEA analiza el ritmo", o: ["Sigo RCP", "No toco al paciente"], c: 1 }
+        ]; 
+        while(questionsRCP.length<30) questionsRCP.push({...questionsRCP[Math.floor(Math.random()*10)]});
+        
+        let quizData = []; let quizIdx = 0; let quizScore = 0;
+        
+        window.startEvaluation = () => { showView('register'); };
+        
+        window.saveUserAndStart = () => { 
+            if(!document.getElementById('input-name').value) { alert("Ingresa tu nombre."); return; }
+            quizData = [...questionsRCP].sort(() => 0.5 - Math.random()).slice(0, 15); 
+            quizIdx = 0; quizScore = 0; 
+            document.getElementById('quiz-bar').style.width = '0%';
+            showView('quiz'); 
+            renderQuestion(); 
+        };
+        
+        function renderQuestion() { 
+            const q = quizData[quizIdx]; 
+            document.getElementById('quiz-count').textContent = `${quizIdx + 1}/15`; 
+            document.getElementById('quiz-bar').style.width = `${(quizIdx/15)*100}%`; 
+            document.getElementById('question-text').textContent = q.q; 
+            const area = document.getElementById('quiz-content-area'); area.innerHTML=''; 
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            
+            if(q.type === 'image-click') {
+                const cont = document.createElement('div'); cont.className = "chest-target-container w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-lg border-4 border-slate-100 bg-white";
+                const img = document.createElement('img'); img.src = q.img; img.className = "w-full h-auto block";
+                const marker = document.createElement('div'); marker.className = "click-marker hidden";
+                const cz = document.createElement('div'); cz.className = "correct-zone-indicator"; cz.style.left = q.target.x+"%"; cz.style.top = q.target.y+"%"; cz.style.width = (q.target.radius*2)+"%"; cz.style.height = (q.target.radius*2)+"%";
+                cont.appendChild(img); cont.appendChild(cz); cont.appendChild(marker);
+                cont.onclick = (e) => { 
+                    if(cont.classList.contains('answered')) return; 
+                    cont.classList.add('answered'); 
+                    const rect = cont.getBoundingClientRect(); const xp = ((e.clientX-rect.left)/rect.width)*100; const yp = ((e.clientY-rect.top)/rect.height)*100; 
+                    marker.style.left=xp+"%"; marker.style.top=yp+"%"; marker.style.display="block"; cz.style.display="block"; 
+                    const dist = Math.sqrt(Math.pow(xp-q.target.x, 2) + Math.pow(yp-q.target.y, 2)); const isOk = dist <= q.target.radius; 
+                    marker.style.background = isOk?"rgba(34,197,94,0.8)":"rgba(239,68,68,0.8)"; 
+                    showQuizFB(isOk, isOk?q.fbOk:q.fbErr); 
+                };
+                area.appendChild(cont);
+            } else if (q.type === 'image-select') {
+                const grid = document.createElement('div'); grid.className = "grid grid-cols-1 md:grid-cols-3 gap-4";
+                q.oImages.forEach((imgUrl, i) => {
+                    const img = document.createElement('img'); img.src = imgUrl; img.className = "w-full h-48 object-cover rounded-2xl shadow-sm img-option bg-white border-2 border-slate-200 p-2";
+                    img.onclick = () => {
+                        const allImgs = grid.querySelectorAll('img'); allImgs.forEach(el => el.onclick = null);
+                        if (i === q.c) { img.classList.add('selected-correct'); showQuizFB(true, "¡Correcto!"); } 
+                        else { img.classList.add('selected-wrong'); allImgs[q.c].classList.add('selected-correct'); showQuizFB(false, "Incorrecto."); }
+                    };
+                    grid.appendChild(img);
+                });
+                area.appendChild(grid);
+            } else {
+                area.innerHTML = `<div class="space-y-4">${q.o.map((opt, i) => `<button onclick="submitAnswer(${i === q.c}, this)" class="w-full text-left p-5 bg-slate-50 border-2 rounded-2xl font-bold hover:bg-slate-100 transition hover:border-uart">${opt}</button>`).join('')}</div>`; 
+            }
+        }
+        
+        window.submitAnswer = (isCorrect, btn) => { 
+            const btns = btn.parentElement.querySelectorAll('button'); btns.forEach(b=>b.disabled=true); 
+            btn.classList.add(isCorrect ? 'bg-green-100' : 'bg-red-100'); 
+            btn.classList.add(isCorrect ? 'border-green-500' : 'border-red-500');
+            showQuizFB(isCorrect, isCorrect?"¡Correcto!":"Incorrecto."); 
+        };
+        
+        function showQuizFB(isOk, txt) { 
+            if(isOk) quizScore++; 
+            const fb = document.getElementById('quiz-feedback'); fb.classList.remove('hidden'); fb.textContent = txt; 
+            fb.className = isOk ? "mt-6 font-bold p-4 rounded-xl bg-green-100 text-green-700 block border border-green-200" : "mt-6 font-bold p-4 rounded-xl bg-red-100 text-red-700 block border border-red-200"; 
+            setTimeout(() => { quizIdx++; if(quizIdx < 15) renderQuestion(); else finishQuiz(); }, 1500); 
+        }
+        
+        function finishQuiz() {
+            const name = document.getElementById('input-name').value.toUpperCase(); 
+            const dni = document.getElementById('input-dni').value;
+            const pass = quizScore >= 11;
+            
+            // Llama a la función de Firebase para guardar el resultado en la nube
+            if (window.saveQuizResultToCloud) {
+                window.saveQuizResultToCloud(name, dni, quizScore, pass);
+            }
+
+            if(pass) {
+                document.getElementById('certificate-target').innerHTML = `
+                    <div class="cert-border border-uart p-12 text-center bg-white shadow-2xl rounded-xl max-w-2xl mx-auto relative overflow-hidden" style="border: 12px solid var(--uart-red); outline: 2px solid #b91c1c; outline-offset: -16px;">
+                        <div class="absolute -right-10 -top-10 opacity-5"><i class="fa-solid fa-graduation-cap text-[15rem]"></i></div>
+                        <h4 class="text-uart font-black tracking-widest uppercase mb-2">UART UNPA Río Turbio</h4>
+                        <h2 class="text-4xl font-black text-slate-900 mb-8 italic">RCP COMUNITARIO Y DEA</h2>
+                        <h1 class="text-3xl font-black border-b-4 border-uart inline-block px-4 pb-2 mb-10">${name}</h1>
+                        <p class="text-slate-700 max-w-md mx-auto mb-10 font-bold">Ha aprobado satisfactoriamente la evaluación teórica del curso de Reanimación Cardiopulmonar.</p>
+                        <div class="flex justify-between items-end border-t pt-8"><div class="text-left"><p class="font-black">Río Turbio</p></div><div class="w-16 h-16 bg-uart rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-stamp text-2xl"></i></div></div>
+                    </div>
+                    <button onclick="showView('splash')" class="w-full mt-8 bg-slate-900 text-white p-4 rounded-2xl font-bold hover:bg-black transition">Finalizar</button>
+                `;
+                showView('cert');
+            } else { alert("Puntuación: "+quizScore+"/15. Necesitas 11 para aprobar. ¡Inténtalo de nuevo!"); showView('splash'); }
+        }
+    </script>
+
+    <!-- Firebase SDK e Interacción -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Tu configuración oficial de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxiONUtNU5SXj5i10Rs_19FpPJg0PT2P0",
+            authDomain: "rcp-dea-en-la-comunidad.firebaseapp.com",
+            projectId: "rcp-dea-en-la-comunidad",
+            storageBucket: "rcp-dea-en-la-comunidad.firebasestorage.app",
+            messagingSenderId: "740657059817",
+            appId: "1:740657059817:web:52f6ec03dd175838f21d78"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const artifactId = 'rcp-taller-turbio';
+        let currentUser = null;
+
+        // Iniciar sesión de forma anónima para proteger la base de datos
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (tokenError) {
+                        console.warn("El token del entorno no coincide con tu proyecto de Firebase. Se usará autenticación anónima.", tokenError);
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Error de autenticación:", e);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+        });
+
+        // Función global para guardar en Firestore
+        window.saveQuizResultToCloud = async (name, dni, score, passed) => {
+            if (!currentUser) return; // Regla de seguridad: debe estar autenticado anónimamente
+            try {
+                const colRef = collection(db, 'artifacts', artifactId, 'public', 'data', 'evaluaciones');
+                await addDoc(colRef, {
+                    name,
+                    dni,
+                    score,
+                    passed,
+                    timestamp: serverTimestamp(),
+                    userId: currentUser.uid
+                });
+                console.log("¡Resultado guardado exitosamente en Firebase!");
+            } catch (e) {
+                console.error("Error al guardar en Firebase:", e);
+            }
+        };
+    </script>
+</body>
+</html>
