@@ -394,4 +394,321 @@
 
         function checkModAuth() {
             const pin = document.getElementById('mod-pin').value;
-            if (pin === "53
+            if (pin === "5359") { document.getElementById('mod-pin').value = ""; showView('mod-menu'); } 
+            else { alert("PIN INCORRECTO"); document.getElementById('mod-pin').value = ""; }
+        }
+
+        function startCotejo() {
+            const name = document.getElementById('cotejo-name').value;
+            const dni = document.getElementById('cotejo-dni').value;
+            const email = document.getElementById('cotejo-email').value;
+            const tel = document.getElementById('cotejo-tel').value;
+
+            if(!name || !dni || !email || !tel) { alert("Complete todos los campos solicitados"); return; }
+
+            currentEvaluado = { name, dni, email, tel, date: new Date().toLocaleDateString() };
+            document.getElementById('eval-target-name').textContent = name;
+            
+            const f1 = document.getElementById('fase1-list'); f1.innerHTML = "";
+            const f2 = document.getElementById('fase2-list'); f2.innerHTML = "";
+
+            cotejoItems.forEach(item => {
+                const html = `<div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm"><p class="text-sm font-bold text-slate-700 w-2/3">${item.id}- ${item.text}</p><div class="flex gap-2"><label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="q${item.id}" value="1" class="w-4 h-4 accent-green-600"> <span class="text-xs font-bold">SI</span></label><label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="q${item.id}" value="0" checked class="w-4 h-4 accent-red-600"> <span class="text-xs font-bold">NO</span></label></div></div>`;
+                if(item.fase === 1) f1.innerHTML += html; else f2.innerHTML += html;
+            });
+            showView('cotejo-eval');
+        }
+
+        function calcCotejoResult() {
+            let score = 0; let detail = [];
+            cotejoItems.forEach(item => {
+                const val = parseInt(document.querySelector(`input[name="q${item.id}"]:checked`).value);
+                score += val; detail.push(val);
+            });
+            currentEvaluado.score = score; currentEvaluado.detail = detail;
+            historico.unshift(currentEvaluado);
+            localStorage.setItem('rcp_historico', JSON.stringify(historico));
+
+            let msg = `PUNTAJE OBTENIDO: ${score}/13\n\n`;
+            if(score >= 9) msg += "¡APROBADO FELICITACIONES!"; else msg += "NO ALCANZÓ EL MÍNIMO (9 PUNTOS).";
+            alert(msg); showView('mod-menu');
+        }
+
+        function renderHistorico() {
+            const body = document.getElementById('historico-body');
+            body.innerHTML = historico.map(h => `<tr class="border-b text-sm"><td class="p-4 text-slate-500 font-medium">${h.date}</td><td class="p-4 font-bold text-slate-800">${h.name}</td><td class="p-4 text-slate-600">${h.dni}</td><td class="p-4 text-slate-500">${h.email || '-'}</td><td class="p-4 text-slate-500">${h.tel || '-'}</td><td class="p-4 font-black ${h.score >= 9 ? 'text-green-600' : 'text-red-600'}">${h.score}/13</td></tr>`).join('');
+            showView('mod-historico');
+        }
+
+        let myChart = null;
+        function renderEstadisticas() {
+            document.getElementById('stat-total').textContent = historico.length;
+            const itemCounts = new Array(13).fill(0);
+            historico.forEach(h => { h.detail.forEach((val, idx) => { if(val === 1) itemCounts[idx]++; }); });
+            const percentages = itemCounts.map(count => historico.length ? Math.round((count / historico.length) * 100) : 0);
+
+            const ctx = document.getElementById('chartCotejo').getContext('2d');
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar', data: { labels: cotejoItems.map(i => `Pto ${i.id}`), datasets: [{ label: '% de Acierto por Actividad', data: percentages, backgroundColor: '#004a99cc', borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { tooltip: { callbacks: { label: (c) => `Acierto: ${c.raw}% (${itemCounts[c.dataIndex]} personas)` } } } }
+            });
+            showView('mod-stats');
+        }
+
+        // ==========================================
+        // 3. LÓGICA DE DISERTACIÓN (SLIDES EN GITHUB)
+        // ==========================================
+        const diapositivasURLs = [
+            "DIAPOSITIVA1.jpg", "DIAPOSITIVA2.jpg", "DIAPOSITIVA3.jpg", 
+            "DIAPOSITIVA4.jpg", "DIAPOSITIVA5.jpg", "DIAPOSITIVA6.jpg", 
+            "DIAPOSITIVA7.jpg", "DIAPOSITIVA8.jpg", "DIAPOSITIVA9.jpg"
+        ];
+        
+        let currentSlideIdx = 0;
+        function renderSlide() { 
+            const imgEl = document.getElementById('slide-img');
+            imgEl.src = diapositivasURLs[currentSlideIdx];
+            imgEl.classList.remove('animate-fadeIn'); void imgEl.offsetWidth; imgEl.classList.add('animate-fadeIn');
+
+            document.getElementById('slide-counter').textContent = `${currentSlideIdx + 1} / ${diapositivasURLs.length}`; 
+            document.getElementById('slide-progress').style.width = `${((currentSlideIdx + 1) / diapositivasURLs.length) * 100}%`; 
+
+            if(currentSlideIdx === diapositivasURLs.length - 1) {
+                document.getElementById('btn-end-slide').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-end-slide').classList.add('hidden');
+            }
+        }
+        function changeSlide(dir) { currentSlideIdx += dir; if(currentSlideIdx < 0) currentSlideIdx = 0; if(currentSlideIdx >= diapositivasURLs.length) currentSlideIdx = diapositivasURLs.length - 1; renderSlide(); }
+
+        // ==========================================
+        // 4. NUESTRO RECORRIDO (SUBIR CON IMGBB)
+        // ==========================================
+        let base64ImageToUpload = null;
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; 
+                        let scaleSize = 1;
+                        if(img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = img.width * scaleSize;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        base64ImageToUpload = canvas.toDataURL('image/jpeg', 0.8); 
+                        
+                        document.getElementById('registro-preview').src = base64ImageToUpload;
+                        document.getElementById('preview-container').classList.remove('hidden');
+                        document.getElementById('upload-buttons').classList.add('hidden');
+                        input.value = '';
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function clearPreview() {
+            base64ImageToUpload = null;
+            document.getElementById('registro-preview').src = "";
+            document.getElementById('preview-container').classList.add('hidden');
+            document.getElementById('upload-buttons').classList.remove('hidden');
+        }
+
+        async function uploadRecorrido() {
+            if(!base64ImageToUpload) { alert("Sube una foto primero"); return; }
+            
+            const desc = document.getElementById('registro-desc').value;
+            const btn = document.getElementById('btn-upload-registro');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> SUBIENDO FOTO...`;
+
+            try {
+                const base64Data = base64ImageToUpload.split(',')[1];
+                const formData = new FormData();
+                formData.append('image', base64Data);
+                
+                const apiKey = '2308cf41100058a1f3c31f57afa74225'; 
+                
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if(data.success) {
+                    const imageUrl = data.data.url; 
+                    
+                    if(typeof window.savePostToCloud === 'function') {
+                        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> GUARDANDO...`;
+                        window.savePostToCloud(imageUrl, desc, () => {
+                            clearPreview();
+                            document.getElementById('registro-desc').value = "";
+                            btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> PUBLICAR FOTO`;
+                            alert("¡Publicado exitosamente en Nuestro Recorrido!");
+                            showView('mod-menu');
+                        });
+                    }
+                } else {
+                    throw new Error("ImgBB rechazó la imagen.");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Hubo un problema subiendo la foto. Verifica tu conexión a internet o tu clave de ImgBB.");
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-2"></i> PUBLICAR FOTO`;
+            }
+        }
+
+        function renderFeed(posts) {
+            const feed = document.getElementById('recorrido-feed');
+            if(posts.length === 0) {
+                feed.innerHTML = `<div class="text-center py-12 text-slate-400 bg-white rounded-3xl shadow-sm border border-slate-100"><i class="fa-solid fa-images text-4xl mb-4 opacity-50"></i><p class="font-bold">Aún no hay publicaciones en el recorrido.</p></div>`;
+                return;
+            }
+            
+            feed.innerHTML = posts.map(p => `
+                <div class="bg-white rounded-3xl shadow-md overflow-hidden border border-slate-100 flex flex-col">
+                    <img src="${p.image}" class="w-full h-auto max-h-[80vh] object-contain bg-slate-900" alt="Foto de la jornada">
+                    <div class="p-6">
+                        <p class="text-slate-800 font-medium mb-4 text-lg">${p.desc || ''}</p>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4 border-b pb-4"><i class="fa-solid fa-clock mr-1"></i> ${new Date(p.timestamp?.toDate() || Date.now()).toLocaleDateString()}</p>
+                        <div class="space-y-3 mb-4 max-h-48 overflow-y-auto pr-2">
+                            ${(p.comments || []).map(c => `<div class="bg-slate-50 p-4 rounded-xl text-sm border shadow-sm"><p class="text-slate-700 font-medium">${c}</p></div>`).join('')}
+                            ${(p.comments || []).length === 0 ? '<p class="text-xs text-slate-400 italic">Sé el primero en comentar.</p>' : ''}
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <input type="text" id="comment-input-${p.id}" class="flex-grow p-4 bg-slate-50 border rounded-xl text-sm outline-none focus:border-unpa shadow-inner" placeholder="Escribe un comentario...">
+                            <button onclick="submitComment('${p.id}')" class="bg-unpa text-white px-6 rounded-xl font-bold hover:bg-blue-800 transition shadow-md hover:shadow-lg"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function submitComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const text = input.value.trim();
+            if(text && typeof window.addCommentToCloud === 'function') {
+                window.addCommentToCloud(postId, text);
+                input.value = '';
+            }
+        }
+
+        // ==========================================
+        // 5. LABORATORIO: SIMULADORES RCP (SIN ESCENA NI DEA)
+        // ==========================================
+        const chatScen = [ { t: "107: ¿Emergencia?", o: [{t: "Adulto inconsciente Roca 230.", n: 1, c: true}] }, { t: "107: Entendido. ¿Respira?", o: [{t: "No respira.", n: 2, c: true}] }, { t: "107: Es un paro. Inicie RCP.", o: [{t: "Inicio compresiones.", n: 99, c: true}] } ];
+        let chSt = 0; function initSim107() { document.getElementById('chat-container').innerHTML=''; chSt=0; rndChat(); }
+        function rndChat() { if(chSt===99) { document.getElementById('chat-options').innerHTML=`<button onclick="showView('home-rcp')" class="bg-uart text-white p-4 rounded-xl font-black text-lg shadow-lg">TERMINAR SIMULACIÓN</button>`; return; } const s=chatScen[chSt]; adBub(s.t,false); const oC=document.getElementById('chat-options'); oC.innerHTML=''; s.o.forEach(o=>{ const b=document.createElement('button'); b.className="bg-white border-2 border-uart text-uart p-4 rounded-xl font-bold hover:bg-slate-50 transition text-left"; b.textContent=o.t; b.onclick=()=>{ adBub(o.t,true); oC.innerHTML=''; setTimeout(()=>{chSt=o.n; rndChat();}, 1000); }; oC.appendChild(b); }); }
+        function adBub(t, u) { const d=document.createElement('div'); d.className=`chat-bubble ${u?'chat-user shadow-md':'chat-operator shadow-sm'}`; d.textContent=t; document.getElementById('chat-container').appendChild(d); }
+        
+        function initTriage() { document.querySelectorAll('.triage-btn').forEach(b=>{b.disabled=false; b.classList.remove('opacity-50');}); document.getElementById('triage-feedback').classList.add('hidden'); }
+        function checkTriage(p, b) { document.querySelectorAll('.triage-btn').forEach(x=>{x.disabled=true; x.classList.add('opacity-50');}); b.classList.remove('opacity-50'); const f=document.getElementById('triage-feedback'); f.classList.remove('hidden'); if(p===1){f.innerHTML="¡Correcto! Víctima B en paro."; f.className="mt-8 font-black p-6 rounded-2xl bg-green-100 text-green-800 block border-2 border-green-200";}else{f.innerHTML="Error. La Víctima B tiene prioridad absoluta."; f.className="mt-8 font-black p-6 rounded-2xl bg-red-100 text-red-800 block border-2 border-red-200"; setTimeout(initTriage,2500);} }
+        
+        const cOk = ["1. Llamado", "2. RCP", "3. DEA", "4. SVA", "5. Post-Paro", "6. Recuperación"]; let cC = [];
+        function initGameChain() { cC=[...cOk].sort(()=>Math.random()-0.5); rndCh(); document.getElementById('chain-game-feedback').classList.add('hidden'); }
+        function rndCh() { const l=document.getElementById('chain-game-list'); l.innerHTML=''; cC.forEach((it,i)=>{const e=document.createElement('div'); e.className="chain-link bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 text-sm font-black flex items-center justify-center text-center h-24 hover:bg-white shadow-sm transition"; e.textContent=it; e.onclick=()=>hCT(i); l.appendChild(e);}); }
+        let cF = null; function hCT(i) { const els=document.querySelectorAll('.chain-link'); if(cF===null){cF=i; els[i].classList.add('border-orange-500', 'bg-orange-50', 'scale-105');}else{[cC[cF], cC[i]]=[cC[i], cC[cF]]; rndCh(); cF=null;} }
+        function checkChainOrder() { const ok=cC.every((v,i)=>v===cOk[i]); const f=document.getElementById('chain-game-feedback'); f.classList.remove('hidden'); f.textContent=ok?"¡Perfecto! La cadena es correcta.":"El orden es incorrecto. Sigue intentando."; f.className=ok?"mt-8 font-black p-6 rounded-2xl bg-green-100 text-green-700 block border-2 border-green-200":"mt-8 font-black p-6 rounded-2xl bg-red-100 text-red-700 block border-2 border-red-200"; }
+        
+        let tT = []; function initTapping() { tT=[]; document.getElementById('tap-bpm').textContent="0"; document.getElementById('tap-status').textContent="INICIA"; document.getElementById('tap-status').className="text-2xl font-black text-slate-400 mt-2"; }
+        function handleTap(e) { e.preventDefault(); tT.push(Date.now()); if(tT.length>6) tT.shift(); if(tT.length>=2){ let d=0; for(let i=1;i<tT.length;i++) d+=(tT[i]-tT[i-1]); const b=Math.round(60000/(d/(tT.length-1))); document.getElementById('tap-bpm').textContent=b; const st=document.getElementById('tap-status'); if(b>=100&&b<=120){st.textContent="¡PERFECTO!"; st.className="text-2xl font-black text-green-500 mt-2";}else{st.textContent=b<100?"¡LENTO!":"¡RÁPIDO!"; st.className="text-2xl font-black text-red-500 mt-2";} } }
+        
+        let aC; let mAct = false; let mInt = null; let lBt = 0; const bpM = 60000 / 110; let tmI = null; let tSc = 0; let cpC = 0; let cyc = 1; let sqA = false;
+        function pBp(al = false) { if (!aC) aC = new (window.AudioContext || window.webkitAudioContext)(); if (aC.state === 'suspended') aC.resume(); const o = aC.createOscillator(); const g = aC.createGain(); o.type = al?'square':'sine'; o.frequency.setValueAtTime(al?1200:800, aC.currentTime); g.gain.setValueAtTime(0.5, aC.currentTime); g.gain.exponentialRampToValueAtTime(0.01, aC.currentTime + 0.1); o.connect(g); g.connect(aC.destination); o.start(); o.stop(aC.currentTime + 0.1); }
+        function upTD() { document.getElementById('metro-time').textContent = `${Math.floor(tSc/60).toString().padStart(2,'0')}:${(tSc%60).toString().padStart(2,'0')}`; document.getElementById('metro-count').textContent = cpC; }
+        window.iniciarSecuenciaRCP = function() { if (mAct || sqA) { stopMetronome(); return; } sqA = true; const b = document.getElementById('btn-metro'); b.innerHTML = '<i class="fa-solid fa-stop mr-2"></i> DETENER'; b.classList.replace('bg-uart', 'bg-slate-800'); b.classList.remove('hover:bg-red-700'); b.classList.add('hover:bg-black'); document.getElementById('prep-overlay').classList.remove('hidden'); const p = ["1. ESCENA SEGURA", "3...", "2...", "1...", "¡YA!"]; let i = 0; const stp = () => { if(!sqA) return; if(i < p.length) { document.getElementById('prep-text').textContent = p[i]; i++; setTimeout(stp, 1000); } else { document.getElementById('prep-overlay').classList.add('hidden'); sqA = false; arrM(); } }; stp(); };
+        function arrM() { mAct = true; tSc = 0; cpC = 0; cyc = 1; let st = Date.now(); tmI = setInterval(() => { tSc = Math.floor((Date.now() - st) / 1000); upTD(); if(tSc === 60 && cyc === 1) { pBp(true); document.getElementById('cambio-alert').style.display = 'block'; setTimeout(() => { document.getElementById('cambio-alert').style.display = 'none'; cyc = 2; st = Date.now(); }, 2000); } else if(tSc === 60 && cyc === 2) { stopMetronome(); alert("Fin de ciclo."); } }, 500); const cir = document.getElementById('metro-circle'); const tk = (now) => { if(!mAct) return; if(now - lBt >= bpM) { lBt = now; pBp(); cpC++; cir.classList.add('pulse-active'); setTimeout(() => cir.classList.remove('pulse-active'), 100); } mInt = requestAnimationFrame(tk); }; lBt = performance.now(); tk(lBt); }
+        function stopMetronome() { mAct = false; sqA = false; clearInterval(tmI); cancelAnimationFrame(mInt); document.getElementById('prep-overlay').classList.add('hidden'); const b=document.getElementById('btn-metro'); b.innerHTML="INICIAR RCP"; b.classList.replace('bg-slate-800', 'bg-uart'); b.classList.remove('hover:bg-black'); b.classList.add('hover:bg-red-700'); }
+        
+        const qSurv = [ {q:"Ritmo RCP", o:["60-80", "100-120"], c:1}, {q:"Profundidad adulto", o:["2 cm", "5 a 6 cm"], c:1}, {q:"Primero", o:["RCP", "Escena Segura"], c:1}, {q:"Número de Emergencia", o:["107", "911"], c:0} ];
+        let sLv = 3; let sSc = 0; let sTl = 100; let sTm = null; let sQx = 0;
+        function startSurvivalQuiz() { sLv=3; sSc=0; sQx=0; showView('quiz-survival'); nxS(); }
+        function nxS() { if(sLv<=0) { alert("¡TRIVIA TERMINADA! Puntos totales: " + sSc); showView('home-rcp'); return; } if(sQx >= qSurv.length) { alert("¡GANASTE LA TRIVIA! Puntos totales: " + sSc); showView('home-rcp'); return; } document.getElementById('survival-lives').innerHTML = '<i class="fa-solid fa-heart"></i>'.repeat(sLv); document.getElementById('survival-score').textContent = sSc; const q = qSurv[sQx]; document.getElementById('survival-q-text').textContent = q.q; const opt = document.getElementById('survival-options'); opt.innerHTML=''; q.o.forEach((o,i) => { const b = document.createElement('button'); b.className="w-full bg-slate-800 text-white p-5 rounded-2xl mb-3 font-black text-xl hover:bg-slate-700 transition shadow-md hover:scale-[1.02]"; b.textContent=o; b.onclick=()=> { clearInterval(sTm); if(i===q.c) { sSc+=100; sQx++; nxS(); } else { sLv--; sQx++; nxS(); } }; opt.appendChild(b); }); sTl=100; clearInterval(sTm); sTm = setInterval(() => { sTl--; document.getElementById('survival-time-bar').style.width = sTl+'%'; if(sTl<=0) { clearInterval(sTm); sLv--; sQx++; nxS(); } }, 100); }
+        function stopSurvivalQuiz() { clearInterval(sTm); }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, updateDoc, doc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxiONUtNU5SXj5i10Rs_19FpPJg0PT2P0",
+            authDomain: "rcp-dea-en-la-comunidad.firebaseapp.com",
+            projectId: "rcp-dea-en-la-comunidad",
+            storageBucket: "rcp-dea-en-la-comunidad.firebasestorage.app",
+            messagingSenderId: "740657059817",
+            appId: "1:740657059817:web:52f6ec03dd175838f21d78"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const artifactId = 'rcp-taller-turbio';
+        let currentUser = null;
+        let unsubscribeFeed = null;
+
+        const initAuth = async () => {
+            try {
+                await signInAnonymously(auth);
+                console.log("Conectado a Firebase anónimamente");
+            } catch (e) {
+                console.error("Error de autenticación:", e);
+                alert("Error crítico: No se pudo conectar con Firebase. ¿Activaste el método 'Anónimo'?");
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => { currentUser = user; });
+
+        window.savePostToCloud = async (imageUrl, desc, callback) => {
+            if (!currentUser) { alert("No estás conectado a Firebase."); return; }
+            try {
+                const colRef = collection(db, 'artifacts', artifactId, 'public', 'data', 'recorrido');
+                await addDoc(colRef, {
+                    image: imageUrl,
+                    desc: desc,
+                    comments: [],
+                    timestamp: serverTimestamp(),
+                    userId: currentUser.uid
+                });
+                callback();
+            } catch (e) { 
+                console.error("Error Firebase:", e); 
+                alert("⛔ ERROR DE FIREBASE: " + e.message + "\n\n¿Revisaste las Reglas (Rules) de Firestore Database?");
+            }
+        };
+
+        window.fetchRecorrido = () => {
+            if(!currentUser) { setTimeout(window.fetchRecorrido, 1000); return; }
+            if(unsubscribeFeed) unsubscribeFeed();
+            const q = query(collection(db, 'artifacts', artifactId, 'public', 'data', 'recorrido'), orderBy('timestamp', 'desc'));
+            
+            unsubscribeFeed = onSnapshot(q, (snapshot) => {
+                const posts = [];
+                snapshot.forEach((doc) => { posts.push({ id: doc.id, ...doc.data() }); });
+                renderFeed(posts);
+            }, (error) => {
+                console.error("Feed error:", error);
+            });
+        };
+
+        window.addCommentToCloud = async (postId, text) => {
+            if (!currentUser) return;
+            try {
+                const docRef = doc(db, 'artifacts', artifactId, 'public', 'data', 'recorrido', postId);
+                await updateDoc(docRef, { comments: arrayUnion(text) });
+            } catch (e) { console.error("Error comment:", e); }
+        };
+    </script>
+</body>
+</html>
