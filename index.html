@@ -38,6 +38,10 @@
 </head>
 <body class="min-h-screen pb-12">
 
+    <div id="intro-splash" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center transition-opacity duration-1000">
+        <img src="PORTADA.jpg" alt="RCP en la Comunidad" class="w-full h-full object-cover md:object-contain">
+    </div>
+
     <header class="bg-white border-b-4 border-unpa shadow-md sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer" onclick="showView('splash')">
@@ -357,6 +361,19 @@
 
     <script>
         // ==========================================
+        // 0. PANTALLA DE INTRODUCCIÓN (SPLASH SCREEN)
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const intro = document.getElementById('intro-splash');
+                intro.style.opacity = '0';
+                setTimeout(() => {
+                    intro.style.display = 'none';
+                }, 1000); // 1 segundo para el desvanecimiento
+            }, 4000); // 4 segundos antes de iniciar el desvanecimiento
+        });
+
+        // ==========================================
         // 1. NAVEGACIÓN Y CONFIGURACIÓN INICIAL
         // ==========================================
         function showView(viewId) {
@@ -401,7 +418,7 @@
             else { alert("PIN INCORRECTO"); document.getElementById('mod-pin').value = ""; }
         }
 
-        // === NUEVA FUNCIÓN PARA BORRAR EL HISTORIAL ===
+        // === FUNCIÓN PARA BORRAR EL HISTORIAL ===
         window.borrarHistorial = function() {
             if(confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODAS las evaluaciones? Esto dejará la tabla en cero y no se puede deshacer.")) {
                 historico = [];
