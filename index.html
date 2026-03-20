@@ -39,7 +39,7 @@
 <body class="min-h-screen pb-12">
 
     <div id="intro-splash" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center transition-opacity duration-1000">
-        <img src="PORTADA.jpg" alt="RCP en la Comunidad" class="w-full h-full object-cover md:object-contain">
+        <img src="PORTADA.jpg" alt="RCP en la Comunidad" class="w-full h-full object-contain p-2">
     </div>
 
     <header class="bg-white border-b-4 border-unpa shadow-md sticky top-0 z-50">
@@ -369,8 +369,8 @@
                 intro.style.opacity = '0';
                 setTimeout(() => {
                     intro.style.display = 'none';
-                }, 1000); // 1 segundo para el desvanecimiento
-            }, 4000); // 4 segundos antes de iniciar el desvanecimiento
+                }, 1000); 
+            }, 4000); 
         });
 
         // ==========================================
@@ -633,7 +633,7 @@
         }
 
         // ==========================================
-        // 5. LABORATORIO: SIMULADORES RCP (SIN ESCENA NI DEA)
+        // 5. LABORATORIO: SIMULADORES RCP
         // ==========================================
         const chatScen = [ { t: "107: ¿Emergencia?", o: [{t: "Adulto inconsciente Roca 230.", n: 1, c: true}] }, { t: "107: Entendido. ¿Respira?", o: [{t: "No respira.", n: 2, c: true}] }, { t: "107: Es un paro. Inicie RCP.", o: [{t: "Inicio compresiones.", n: 99, c: true}] } ];
         let chSt = 0; function initSim107() { document.getElementById('chat-container').innerHTML=''; chSt=0; rndChat(); }
